@@ -47,6 +47,8 @@ pub use cmd::{
     Addition, CommandInfo, CommandSpec, addition, auto_operation, command_specs, dimension_roles, extrude_reach, find_command, resolve_design_links,
     shown_scope, standard_view,
 };
+/// The scan-to-solid fork's tab: the script action a `scan.*` command names.
+pub use cmd::scan_to_solid::action_of as scan_to_solid_action;
 pub use solidcraft_doc as doc;
 pub use solidcraft_doc::Visibility;
 pub use solidcraft_geom as geom;
