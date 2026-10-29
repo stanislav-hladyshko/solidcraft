@@ -274,10 +274,13 @@ impl ScanToSolid {
             .unwrap_or_else(|| action.to_owned())
     }
 
-    /// The watch check among `action`'s fields that is on, if any (Check's Live).
-    fn watched(&self, action: &str) -> bool {
-        let Some((_, fields)) = self.spec.as_ref().and_then(|spec| action_spec(spec, action)) else { return false };
-        fields.iter().any(|c| c["watch"].as_str() == Some(action) && c["name"].as_str().and_then(|n| self.fields.get(n)) == Some(&Field::Check(true)))
+    /// What OK on `action` does to the watch: `Some(true)` starts it (Check with Live on),
+    /// `Some(false)` stops it (Check with Live off), `None` leaves it running (any other action: a
+    /// change it makes is what the watch is there to check).
+    fn watch_change(&self, action: &str) -> Option<bool> {
+        let (_, fields) = self.spec.as_ref().and_then(|spec| action_spec(spec, action))?;
+        let live = fields.iter().find(|c| c["watch"].as_str() == Some(action))?;
+        Some(live["name"].as_str().and_then(|name| self.fields.get(name)) == Some(&Field::Check(true)))
     }
 
     /// The selection inputs of `action`'s dialog, in the order the script reads the picks.
@@ -470,11 +473,14 @@ pub fn run(app: &mut SolveApp, d: &Dialog) -> Result<(), String> {
     fields.insert(SELECTION.to_owned(), json!(picks));
     panel.stderr.clear();
     let ctx = panel.ctx.clone().ok_or("Scan To Solid is not ready yet: press OK again")?;
-    if panel.watched(action) {
-        panel.set_watch(Some(action), &fields, &ctx)?;
-    } else {
-        panel.set_watch(None, &fields, &ctx)?;
-        panel.running = Some(spawn(&["run".to_owned(), action.clone(), Value::Object(fields).to_string()], &label, &ctx)?);
+    match panel.watch_change(action) {
+        Some(true) => panel.set_watch(Some(action), &fields, &ctx)?,
+        change => {
+            if change == Some(false) {
+                panel.set_watch(None, &fields, &ctx)?;
+            }
+            panel.running = Some(spawn(&["run".to_owned(), action.clone(), Value::Object(fields).to_string()], &label, &ctx)?);
+        }
     }
     app.set_status(format!("{label}…"), false);
     Ok(())
@@ -520,9 +526,18 @@ mod tests {
         panel.fields.insert("force".into(), Field::Text("250,5".into()));
         assert_eq!(panel.values("section")["axis"], "X");
         assert_eq!(panel.values("load_test")["force"], "250,5");
-        assert!(!panel.watched("check"));
+    }
+
+    /// Check with Live on starts the watch, with Live off stops it; any other action leaves it
+    /// running (Section stopped it, so Live never checked a change made from the tab).
+    #[test]
+    fn scan_to_solid_only_check_turns_its_watch_on_or_off() {
+        let mut panel = described();
+        assert_eq!(panel.watch_change("check"), Some(false));
         panel.fields.insert("live".into(), Field::Check(true));
-        assert!(panel.watched("check") && !panel.watched("section"));
+        assert_eq!(panel.watch_change("check"), Some(true));
+        assert_eq!(panel.watch_change("section"), None);
+        assert_eq!(panel.watch_change("load_test"), None);
     }
 
     /// A job whose script writes `{"answer": "Built"}` and exits, after about a second when `lingers`.
