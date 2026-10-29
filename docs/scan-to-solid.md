@@ -35,7 +35,8 @@ the scan-to-solid repository).
    They go to the status line and Messages. A run that ends without its last word says so, with
    the tail of its error output.
 5. Check with Live on runs `solidcraft_run.py watch check …`: Check again after every design change
-   it did not make. Check with Live off stops it.
+   it did not make, a change made by another button of the tab included. Check with Live off stops
+   it; a watch that stops by itself says so.
 
 The scan-to-solid folder is `SCAN_TO_SOLID_HOME`, else `C:\Repo\hardware\scan-to-solid`, with its
 Python in `.venv`. Without it the window says where it looked.
@@ -51,7 +52,9 @@ cargo test -p solidcraft-ui-egui scan_to_solid
 ```
 
 The binaries are `target/release/solidcraft.exe` and `solidcraft-cli.exe`. A push of the branch
-builds the same in GitHub Actions (`scan-to-solid.yml`).
+builds the same in GitHub Actions (`scan-to-solid.yml`). On Linux the Windows exe cross-builds as
+upstream's `docs/building.md` says (`cargo xwin build --release --target x86_64-pc-windows-msvc -p solidcraft`),
+which is how this branch has been built so far, unpushed.
 
 ## Keeping up with upstream
 
