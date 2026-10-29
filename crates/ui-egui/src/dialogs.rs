@@ -357,6 +357,13 @@ crate::dialog_descriptor::dialog_descriptors! {
             /// Pick what the agent chat's next message is about (#2286): elements, features and bodies.
             /// OK hands the picks to the chat (`agent_chat::pick_done`); nothing is run.
             ChatContext,
+            /// A SCAN TO SOLID tab action (scan-to-solid fork, `scan_to_solid`): its fields and picks.
+            /// OK runs the action's script; nothing runs in the engine.
+            Scan {
+                action: String,
+                /// The tab button's label.
+                title: &'static str,
+            },
             /// Joints and components (`dialogs_assembly`).
             Assembly(crate::dialogs_assembly::Asm),
             /// Sheet metal (`dialogs_sheet`).
@@ -1008,6 +1015,11 @@ impl Dialog {
                 },
                 vec![SelInput::new("Profile", PROFILES, false)],
             ),
+            #[cfg(not(target_arch = "wasm32"))]
+            _ if solidcraft_engine::scan_to_solid_action(id).is_some() => {
+                let (kind, inputs) = crate::scan_to_solid::start(app, id)?;
+                Dialog::new(kind, inputs)
+            }
             "solid.combine" => Dialog::new(
                 Kind::Combine { operation: 1, keep_tools: false },
                 vec![SelInput::new("Target Body", BODIES, false), SelInput::new("Tool Bodies", BODIES, true)],
@@ -2092,6 +2104,7 @@ fn title(k: &Kind) -> &'static str {
         Kind::BoundaryFill { .. } => "BOUNDARY FILL",
         Kind::Remove => "REMOVE",
         Kind::ChatContext => "PICK CONTEXT",
+        Kind::Scan { title, .. } => title,
         Kind::PathPattern { .. } => "PATTERN ON PATH",
         Kind::Split => "SPLIT BODY",
         Kind::Thread { .. } => "THREAD",
@@ -2931,7 +2944,14 @@ pub fn show(app: &mut SolveApp, ctx: &egui::Context) {
     let wide = matches!(&d.kind, Kind::Motion(k) if k.wide());
 
     let raw_title = title(&d.kind);
-    let heading = if d.editing.is_some() { crate::i18n::format("dialog.edit_title", &[("title", tr(raw_title))]) } else { tr(raw_title).to_string() };
+    let heading = if d.editing.is_some() {
+        crate::i18n::format("dialog.edit_title", &[("title", tr(raw_title))])
+    } else if matches!(d.kind, Kind::Scan { .. }) {
+        // the tab's titles are its button labels ("Load Test"); a dialog's title is in capitals
+        tr(raw_title).to_uppercase()
+    } else {
+        tr(raw_title).to_string()
+    };
     let frame = crate::ui_kit::Panel::feature_frame(ctx, app.ui.layout, side);
     // OK is offered once the inputs make a feature.
     let has_ok = !matches!(d.kind, Kind::Sketch | Kind::Measure { .. });
@@ -2939,6 +2959,8 @@ pub fn show(app: &mut SolveApp, ctx: &egui::Context) {
         Kind::Sketch => false,
         // Nothing picked is an answer too: OK empties the chat's tray.
         Kind::ChatContext => true,
+        // the script says what is missing (a refusal), as the tab's buttons always have
+        Kind::Scan { .. } => true,
         Kind::Material { editor, .. } => !editor.editing() && apply_commands(app, &d).is_ok(),
         Kind::SaveMesh(_) => crate::dialogs_save_mesh::ready(&d.inputs),
         Kind::SketchModify(crate::sketch_modify_ui::Mod::Corner { .. }) => {
@@ -3154,6 +3176,8 @@ pub fn show(app: &mut SolveApp, ctx: &egui::Context) {
         let run = match &mut d.kind {
             Kind::Text(k) => Some(crate::sketch_text::apply(app, k)),
             Kind::ChatContext => Some(crate::agent_chat::pick_done(app, &d)),
+            #[cfg(not(target_arch = "wasm32"))]
+            Kind::Scan { .. } => Some(crate::scan_to_solid::run(app, &d)),
             _ => match begin_applying(app, &d) {
                 // Computing: the dialog stays, saying so, until it is in.
                 Some(job) => {
@@ -3874,6 +3898,7 @@ fn dialog_commands(app: &SolveApp, d: &Dialog) -> Result<Vec<(String, Value)>, S
     }
     let (cmd, params): (&str, Value) = match &d.kind {
         Kind::ChatContext => return Err("the chat takes these picks; nothing runs".into()),
+        Kind::Scan { .. } => return Err("a Scan To Solid script runs this; nothing runs in the engine".into()),
         Kind::Extrude {
             distance,
             direction,

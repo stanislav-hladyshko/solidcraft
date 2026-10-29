@@ -193,6 +193,8 @@ impl eframe::App for App {
     fn on_exit(&mut self) {
         // The agent chat's agent and everything it started end with the app.
         solidcraft_ui_egui::agent_chat::shutdown(&mut self.solve);
+        // The scan-to-solid scripts the SCAN TO SOLID tab started end with the app too.
+        self.solve.scan_to_solid.shutdown();
         // A save still being written ends before the app does.
         solidcraft_ui_egui::save_job::tick(&mut self.solve, true);
         // Pictures still being drawn off the window thread (Home cards, file previews) end

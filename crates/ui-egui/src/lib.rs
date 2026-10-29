@@ -220,6 +220,8 @@ mod rule_editor;
 #[cfg(test)]
 mod rule_editor_tests;
 pub mod save_job;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod scan_to_solid;
 pub mod scenario;
 pub(crate) mod scene_palette;
 pub mod select_other;
@@ -486,6 +488,9 @@ pub struct SolveApp {
     pub design_properties: Option<design_properties::DesignProperties>,
     /// The Bill of Materials window, when open.
     pub bom: Option<bom_panel::BomPanel>,
+    /// The SCAN TO SOLID tab (scan-to-solid fork): its actions, their fields and the scripts running.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub scan_to_solid: scan_to_solid::ScanToSolid,
     material_card_review: Option<material_card_review::ReviewWindow>,
     /// Context menus, rename box and Properties window.
     pub menu: context_menu::MenuState,
@@ -713,6 +718,8 @@ impl SolveApp {
             params: None,
             design_properties: None,
             bom: None,
+            #[cfg(not(target_arch = "wasm32"))]
+            scan_to_solid: Default::default(),
             material_card_review: None,
             menu: context_menu::MenuState::default(),
             gesture: mouse_gesture::State::default(),
@@ -1613,6 +1620,10 @@ impl SolveApp {
         }
         if id == "assembly.bom" {
             bom_panel::open(self);
+            return;
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        if scan_to_solid::waits(self, id) {
             return;
         }
         if id == "sketch.finish" {
@@ -2602,6 +2613,8 @@ impl SolveApp {
         params_dialog::show(self, ui.ctx());
         design_properties::show(self, ui.ctx());
         bom_panel::show(self, ui.ctx());
+        #[cfg(not(target_arch = "wasm32"))]
+        scan_to_solid::poll(self, ui.ctx());
         material_card_review::show(self, ui.ctx());
         recovery_ui::show(self, ui.ctx());
         stand_up::show(self, ui.ctx());

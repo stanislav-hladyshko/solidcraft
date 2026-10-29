@@ -712,6 +712,10 @@ fn additional_rows(app: &mut SolveApp, d: &mut Dialog, ui: &mut egui::Ui) -> boo
             form_row(ui, "Position (0 to 1)", |ui| enter |= field(ui, t));
         }
         Kind::Split | Kind::ReplaceFace | Kind::Remove | Kind::Midplane | Kind::ChatContext | Kind::Construct { t: None, .. } => {}
+        #[cfg(not(target_arch = "wasm32"))]
+        Kind::Scan { action, .. } => enter |= crate::scan_to_solid::rows(ui, &mut app.scan_to_solid, action),
+        #[cfg(target_arch = "wasm32")]
+        Kind::Scan { .. } => {}
         Kind::Rib { thickness, depth, flip, normal, .. } => {
             form_row(ui, "Direction", |ui| {
                 let mut i = usize::from(*normal);
