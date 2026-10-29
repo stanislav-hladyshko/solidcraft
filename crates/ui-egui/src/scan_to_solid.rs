@@ -363,9 +363,12 @@ impl ScanToSolid {
             for line in lines {
                 status_lines.push((if line.last { format!("{label}: {}", line.text) } else { format!("{label}… {}", line.text) }, line.failed));
             }
-            // a run that ended without its last word crashed before it could say why
-            if done && !answered {
-                status_lines.push((format!("{label} stopped without an answer: {}", self.stderr.join("\n")), true));
+            // a run that ended without its last word crashed before it could say why; a watch ends
+            // only when turned off, which drops it before this, so its end is always said
+            if done && (watch || !answered) {
+                let what = if watch { "stopped" } else { "stopped without an answer" };
+                let why = self.stderr.join("\n");
+                status_lines.push((if why.is_empty() { format!("{label} {what}") } else { format!("{label} {what}: {why}") }, true));
             }
         }
         status_lines
@@ -538,6 +541,22 @@ mod tests {
         assert_eq!(panel.watch_change("check"), Some(true));
         assert_eq!(panel.watch_change("section"), None);
         assert_eq!(panel.watch_change("load_test"), None);
+    }
+
+    /// A watch ends only when it is turned off, which drops it first: one that ends by itself says
+    /// so, even after its answers (it went quiet, and Live looked on).
+    #[test]
+    fn scan_to_solid_a_watch_that_ends_by_itself_says_so() {
+        let mut panel = ScanToSolid { watching: Some(answering_job(false)), ..Default::default() };
+        let mut status_lines = Vec::new();
+        for _ in 0..200 {
+            status_lines.extend(panel.poll());
+            if panel.watching.is_none() {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(25));
+        }
+        assert_eq!(status_lines, [("Build: Built".to_owned(), false), ("Build stopped".to_owned(), true)]);
     }
 
     /// A job whose script writes `{"answer": "Built"}` and exits, after about a second when `lingers`.
