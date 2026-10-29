@@ -41,6 +41,7 @@ pub static COMMANDS: &[CommandSpec] = &[
     CommandSpec::new("scan.build", "Build", action).at(TAB, PANEL_BODY).icon("update").noundo().doc_only().params(PARAMS),
     CommandSpec::new("scan.print", "To Print", action).at(TAB, PANEL_BODY).icon("export").noundo().doc_only().params(PARAMS),
     CommandSpec::new("scan.load_test", "Load Test", action).at(TAB, PANEL_LOAD).icon("compute").noundo().doc_only().params(PARAMS),
+    CommandSpec::new("scan.animate", "Animate", action).at(TAB, PANEL_LOAD).icon("play").noundo().doc_only().params(PARAMS),
     CommandSpec::new("scan.stronger", "Stronger", action).at(TAB, PANEL_LOAD).icon("rib").noundo().doc_only().params(PARAMS),
 ];
 

@@ -109,7 +109,7 @@ pub const SECTIONS: &[Section] = &[
     Section { tab: "SCAN TO SOLID", panel: "BODY FEATURE", promoted: 3, ids: &["scan.accept", "scan.reject", "scan.measured"] },
     Section { tab: "SCAN TO SOLID", panel: "TRACE AND CHECK", promoted: 2, ids: &["scan.section", "scan.check"] },
     Section { tab: "SCAN TO SOLID", panel: "BODY", promoted: 2, ids: &["scan.build", "scan.print"] },
-    Section { tab: "SCAN TO SOLID", panel: "LOAD", promoted: 2, ids: &["scan.load_test", "scan.stronger"] },
+    Section { tab: "SCAN TO SOLID", panel: "LOAD", promoted: 3, ids: &["scan.load_test", "scan.animate", "scan.stronger"] },
     Section {
         tab: "MODEL",
         panel: "SKETCH",
