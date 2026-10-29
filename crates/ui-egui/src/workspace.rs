@@ -32,7 +32,7 @@ pub fn tab_name(tab: &str) -> String {
     crate::i18n::tr_label(&cased).to_string()
 }
 
-pub const TABS: &[&str] = &["MODEL", "SURFACE", "ASSEMBLE", "INSERT", "INSPECT", "MANAGE", "VIEW"];
+pub const TABS: &[&str] = &["MODEL", "SURFACE", "ASSEMBLE", "INSERT", "INSPECT", "MANAGE", "VIEW", "SCAN TO SOLID"];
 
 /// Reading order of the compact, three-column constraint gallery. Icons come from each spec.
 pub const CONSTRAINT_GALLERY: &[&str] = &[
@@ -98,6 +98,18 @@ const CONFIGURE: &[&str] = &["parameters.change", "config.table", "config.config
 pub const AGENT_ONLY: &[&str] = &["sketch.solve"];
 
 pub const SECTIONS: &[Section] = &[
+    // scan-to-solid fork: our scan-to-solid actions, each opening its command dialog (scan_to_solid.rs).
+    Section { tab: "SCAN TO SOLID", panel: "SCAN", promoted: 3, ids: &["scan.lay_scan", "scan.recognise", "scan.intend"] },
+    Section {
+        tab: "SCAN TO SOLID",
+        panel: "PLACE ON SCAN",
+        promoted: 4,
+        ids: &["scan.repair", "scan.feature", "scan.modify", "scan.ignore", "scan.keep"],
+    },
+    Section { tab: "SCAN TO SOLID", panel: "BODY FEATURE", promoted: 3, ids: &["scan.accept", "scan.reject", "scan.measured"] },
+    Section { tab: "SCAN TO SOLID", panel: "TRACE AND CHECK", promoted: 2, ids: &["scan.section", "scan.check"] },
+    Section { tab: "SCAN TO SOLID", panel: "BODY", promoted: 2, ids: &["scan.build", "scan.print"] },
+    Section { tab: "SCAN TO SOLID", panel: "LOAD", promoted: 2, ids: &["scan.load_test", "scan.stronger"] },
     Section {
         tab: "MODEL",
         panel: "SKETCH",
