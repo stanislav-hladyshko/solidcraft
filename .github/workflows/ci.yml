@@ -1099,3 +1099,49 @@ jobs:
           . "$HOME/.cargo/env"
           export CRAFT_FONTS_DIR="$PWD/craft-fonts"
           cargo check --all-targets --locked --target riscv64gc-unknown-linux-gnu
+
+  # Nobody watches the nightly run, and it failed every day from 2026-10-16 to 2026-10-28 before
+  # anyone noticed. When a nightly fails, open one issue, "Nightly CI is failing" (label `ci`), or
+  # comment on it if it is already open; when a nightly passes, close it. A nightly that neither
+  # failed nor fully passed (cancelled) leaves the issue as it is. The only job that may write issues.
+  nightly-alert:
+    name: Nightly alert
+    needs: [dependency-advisories, changes, checks, ci, build-tests, action-matrix, action-matrix-determinism, property-tests]
+    if: always() && github.event_name == 'schedule'
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open, update or close the nightly issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RESULTS: ${{ toJSON(needs) }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHA: ${{ github.sha }}
+        run: |
+          title="Nightly CI is failing"
+          failed=$(jq -r 'to_entries[] | select(.value.result == "failure") | .key' <<<"$RESULTS")
+          unfinished=$(jq -r 'to_entries[] | select(.value.result != "success" and .value.result != "failure") | "\(.key) (\(.value.result))"' <<<"$RESULTS")
+          issue=$(gh issue list --state open --label ci --limit 100 --json number,title \
+            --jq "[.[] | select(.title == \"$title\")] | first | .number // empty")
+          if [ -n "$failed" ]; then
+            body="The nightly run on ${SHA:0:9} failed: $RUN_URL
+
+          Failed jobs: $(paste -sd , - <<<"$failed" | sed 's/,/, /g')."
+            if [ -n "$issue" ]; then
+              gh issue comment "$issue" --body "$body"
+            else
+              gh issue create --title "$title" --label ci --body "$body
+
+          This issue is opened and updated by the nightly run (the nightly-alert job in .github/workflows/ci.yml) and closed by the first nightly that passes."
+            fi
+          elif [ -z "$unfinished" ]; then
+            if [ -n "$issue" ]; then
+              gh issue close "$issue" --comment "The nightly run on ${SHA:0:9} passed: $RUN_URL"
+            fi
+            echo "The nightly passed."
+          else
+            echo "Nothing failed, but not every job finished: $unfinished. The issue is left as it is."
+          fi
