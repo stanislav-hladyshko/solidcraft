@@ -445,7 +445,8 @@ pub fn rows(ui: &mut egui::Ui, panel: &mut ScanToSolid, action: &str) -> bool {
                 let options: Vec<&str> = control["options"].as_array().into_iter().flatten().filter_map(|o| o[1].as_str()).collect();
                 ui_kit::choice_row(ui, &label, &format!("scan_to_solid_{name}"), index, &options);
             }
-            ("number", Some(Field::Text(text))) => enter |= ui_kit::text_row(ui, &label, text, "").1,
+            // (enter, changed): only Enter is OK
+            ("number", Some(Field::Text(text))) => enter |= ui_kit::text_row(ui, &label, text, "").0,
             ("check", Some(Field::Check(on))) => {
                 ui_kit::checkbox(ui, &label, on);
             }
@@ -583,6 +584,23 @@ mod tests {
         }
         assert!(panel.running.is_none(), "the run ends");
         assert_eq!(status_lines, [("Build: Built".to_owned(), false)]);
+    }
+
+    /// Typing in a number field is not OK: the action runs on OK or Enter (each digit typed ran it,
+    /// with the number so far).
+    #[test]
+    fn scan_to_solid_typing_a_number_does_not_run_the_action() {
+        let mut h = crate::scenario::Harness::new();
+        h.app.scan_to_solid.described(DESCRIBED);
+        h.app.start("scan.load_test");
+        h.frames(2);
+        let at = h.call("ui.at", json!({"handle": "dialog:Force (N)"}))["result"].clone();
+        h.call("ui.click", json!({"x": at[0], "y": at[1]}));
+        h.call("ui.text", json!({"text": "2"}));
+        assert!(matches!(h.app.scan_to_solid.fields.get("force"), Some(Field::Text(t)) if t.contains('2')), "{:?}", h.app.scan_to_solid.fields);
+        let dialog = h.app.dialog.as_ref().expect("the dialog stays open while typing");
+        assert_eq!(dialog.error, None, "nothing ran");
+        assert!(h.app.scan_to_solid.running.is_none(), "nothing runs while typing");
     }
 
     #[test]
