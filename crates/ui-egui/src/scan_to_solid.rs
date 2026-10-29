@@ -470,3 +470,103 @@ pub fn run(app: &mut SolveApp, d: &Dialog) -> Result<(), String> {
     app.set_status(format!("{label}…"), false);
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const DESCRIBED: &str = r#"{"panel": [{"title": "Load", "rows": [[{"kind": "number", "name": "force", "default": 100.0, "unit": "N", "label": "Force"}, {"kind": "check", "name": "pull", "label": "Pulls", "default": false}], [{"kind": "button", "action": "load_test", "label": "Load Test", "select": [{"label": "Holds", "accept": ["faces"], "many": false}, {"label": "Force on", "accept": ["faces"], "many": false}]}]]}, {"title": "Trace and check", "rows": [[{"kind": "button", "action": "section", "label": "Section", "select": [{"label": "Point", "accept": ["faces"], "many": false}]}, {"kind": "choice", "name": "axis", "options": [["X", "Plane X"], ["Y", "Plane Y"]], "default": "Y", "label": "Plane"}], [{"kind": "button", "action": "check", "label": "Check", "select": []}, {"kind": "number", "name": "tolerance", "default": 0.5, "unit": "mm", "label": "Tolerance"}, {"kind": "check", "name": "live", "label": "Live", "default": false, "watch": "check"}]]}, {"title": "Place on scan", "rows": [[{"kind": "button", "action": "repair", "label": "Repair", "select": [{"label": "Place", "accept": ["faces", "features"], "many": true}]}]]}], "hint": "Select, then press a button"}"#;
+
+    fn described() -> ScanToSolid {
+        let mut panel = ScanToSolid::default();
+        panel.described(DESCRIBED);
+        panel
+    }
+
+    #[test]
+    fn scan_to_solid_dialog_takes_its_row_and_the_group_rows_without_a_button() {
+        let panel = described();
+        assert_eq!(panel.values("load_test"), json!({"force": "100", "pull": false}).as_object().cloned().unwrap());
+        assert_eq!(panel.values("section"), json!({"axis": "Y"}).as_object().cloned().unwrap());
+        assert_eq!(panel.values("check"), json!({"tolerance": "0.5", "live": false}).as_object().cloned().unwrap());
+        assert!(panel.values("nothing").is_empty());
+        assert_eq!(panel.label_of("load_test"), "Load Test");
+        assert_eq!(panel.label_of("nothing"), "nothing");
+    }
+
+    #[test]
+    fn scan_to_solid_dialog_asks_for_the_picks_in_the_scripts_order() {
+        let panel = described();
+        let load: Vec<_> = panel.inputs("load_test").into_iter().map(|i| (i.label, i.accept, i.multi, i.places)).collect();
+        assert_eq!(load, [("Holds", selection::FACES, false, false), ("Force on", selection::FACES, false, false)]);
+        let repair = panel.inputs("repair");
+        assert_eq!((repair[0].label, repair[0].accept, repair[0].multi, repair[0].places), ("Place", selection::FACES | selection::FEATURES, true, true));
+        assert!(panel.inputs("check").is_empty());
+    }
+
+    #[test]
+    fn scan_to_solid_sends_a_choice_by_its_key_and_a_number_as_typed() {
+        let mut panel = described();
+        panel.fields.insert("axis".into(), Field::Choice(0));
+        panel.fields.insert("force".into(), Field::Text("250,5".into()));
+        assert_eq!(panel.values("section")["axis"], "X");
+        assert_eq!(panel.values("load_test")["force"], "250,5");
+        assert!(!panel.watched("check"));
+        panel.fields.insert("live".into(), Field::Check(true));
+        assert!(panel.watched("check") && !panel.watched("section"));
+    }
+
+    /// A script that wrote its last word and exited at once: the word is read, then the job is done
+    /// (an exit seen before the reader passed the line on lost it, and the tab said the actions
+    /// could not be read).
+    #[test]
+    fn scan_to_solid_keeps_the_last_word_of_a_script_that_already_exited() {
+        #[cfg(windows)]
+        let mut command = {
+            use std::os::windows::process::CommandExt;
+            let mut command = Command::new("cmd");
+            command.raw_arg("/C echo {\"answer\": \"Built\"}");
+            command
+        };
+        #[cfg(not(windows))]
+        let mut command = {
+            let mut command = Command::new("sh");
+            command.args(["-c", "echo '{\"answer\": \"Built\"}'"]);
+            command
+        };
+        let mut child = command.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().expect("a shell starts");
+        let (tx, rx) = channel();
+        read_lines(child.stdout.take().expect("piped"), tx.clone(), Line::Out, egui::Context::default());
+        read_lines(child.stderr.take().expect("piped"), tx, Line::Err, egui::Context::default());
+        let mut job = Job { child, lines: rx, label: "Build".into() };
+        let (mut out, mut done) = (Vec::new(), false);
+        for _ in 0..200 {
+            let (lines, _, finished) = job.read();
+            out.extend(lines);
+            if finished {
+                done = true;
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(25));
+        }
+        assert!(done, "the job ends once both streams are read");
+        assert_eq!(out.iter().filter_map(|l| said(l)).map(|s| s.text).collect::<Vec<_>>(), ["Built"]);
+    }
+
+    #[test]
+    fn scan_to_solid_tells_the_last_word_from_progress() {
+        assert_eq!(said(r#"{"say": "Building…"}"#), Some(Said { text: "Building…".into(), last: false, failed: false }));
+        assert_eq!(said(r#"{"answer": "Built"}"#), Some(Said { text: "Built".into(), last: true, failed: false }));
+        assert_eq!(said(r#"{"refused": "Pick two faces"}"#), Some(Said { text: "Pick two faces".into(), last: true, failed: true }));
+        assert_eq!(said(r#"{"error": "boom"}"#), Some(Said { text: "Error: boom".into(), last: true, failed: true }));
+        assert_eq!(said("not json"), None);
+    }
+
+    #[test]
+    fn scan_to_solid_ignores_a_line_without_a_panel() {
+        let mut panel = ScanToSolid::default();
+        panel.described(r#"{"error": "usage"}"#);
+        panel.described("garbage");
+        assert!(panel.spec.is_none() && panel.fields.is_empty());
+    }
+}
