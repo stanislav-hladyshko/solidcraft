@@ -14,6 +14,7 @@ ADR 0018 there). Everything else is upstream SolidCraft.
 | `crates/ui-egui/src/dialogs.rs`, `dialogs_dense.rs` | `Kind::Scan`: a tab button's command dialog, opened by `Dialog::for_command` like any other; its OK runs the script. |
 | `crates/ui-egui/src/lib.rs` | `SolveApp::scan_to_solid`; `start` waits for the actions once, `poll` each frame. |
 | `apps/solidcraft/src/main.rs` | the scripts stop when the app closes. |
+| `crates/ui-egui/src/file_load.rs`, `lib.rs` | Insert Mesh puts a PLY in as a mesh (`file.insert_mesh`), as its name says. Upstream decides by the extension and makes a PLY a point cloud, which Section cannot cut; Creality writes its scans as `Mesh.ply`. |
 | `crates/ui-egui/src/command_help.rs`, `assets/locales/pending/scan-to-solid.json` | the tab's names, the button labels and their help. English only: the other complete catalogs (ar, he, ja, vi, zh) carry the English text until the app is translated as a whole. |
 | `.github/workflows/scan-to-solid.yml` | a Windows x64 build of this branch (unsigned), with the tab's tests. |
 
