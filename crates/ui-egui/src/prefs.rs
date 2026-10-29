@@ -904,6 +904,8 @@ preference_settings! {
     /// A small dot at every vertex wherever edges are drawn (#7834). Off by default: the viewport
     /// draws edges only, as it always has.
     vertex_markers: bool = false => check("Vertex markers", "Show a small dot at every vertex wherever edges are drawn");
+    /// Restore the previous platform-specific fixed Render preview geometry budget.
+    render_previous_geometry_budget: bool = false, PAGE_GRAPHICS => check_id("prefs.render_previous_geometry_budget");
     /// How finely the viewport tessellates curved faces and edges: `coarse`, `normal`, `fine` or
     /// `ultra` (#1287). Only the display plan the viewport draws; never the design or exports.
     display_quality: String = "normal".into(), PAGE_GRAPHICS;
@@ -5215,6 +5217,20 @@ mod tests {
         for bad in ["1.234,5", "1,2,3", ",", "abc", "", "inf", "NaN"] {
             assert_eq!(super::parse_number(bad), None, "{bad}");
         }
+    }
+
+    #[test]
+    fn render_previous_geometry_budget_round_trips_and_resets() {
+        use serde_json::json;
+        let mut app = crate::SolveApp::new(Default::default(), Default::default());
+        assert!(!app.preferences.render_previous_geometry_budget);
+        let out = super::set(&mut app, &json!({"render_previous_geometry_budget":true})).unwrap();
+        assert_eq!(out["render_previous_geometry_budget"], true);
+        let mut restored = crate::SolveApp::new(Default::default(), Default::default());
+        restored.load_prefs(&app.prefs());
+        assert!(restored.preferences.render_previous_geometry_budget);
+        super::defaults(&mut restored, super::PAGE_GRAPHICS);
+        assert!(!restored.preferences.render_previous_geometry_budget);
     }
 
     /// Display quality (#1287) is a preference like any other: set by name, checked, saved with

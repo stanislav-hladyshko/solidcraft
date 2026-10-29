@@ -333,6 +333,9 @@ labels; `prefs:measure_axis_distances` identifies the checkbox.
 
 ### `ui.prefs` settings
 
+`render_previous_geometry_budget` (Graphics, default false) restores the previous fixed Render preview geometry budget: 512 MiB on 64-bit desktop, 128 MiB elsewhere. With it off, desktop uses the device-based budget.
+
+
 One setting per line, sorted by name. A change that adds a setting adds its own line in order, so two such changes only meet when their settings are neighbours.
 
 - `angle_decimals`
