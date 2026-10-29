@@ -58,6 +58,9 @@ pub struct Request {
     /// The saved design this request is for, when it must not run on another: one shown in its
     /// place by the time the request starts drops it.
     pub design: Option<String>,
+    /// Insert Mesh asked for this file: a PLY with faces (a 3D scanner's mesh) goes in as a mesh,
+    /// not as the point cloud a PLY otherwise makes.
+    pub mesh: bool,
 }
 
 impl Request {
@@ -70,6 +73,7 @@ impl Request {
             options: Default::default(),
             allow_hosts: Vec::new(),
             design: None,
+            mesh: false,
         }
     }
     fn insert(&self) -> bool {
@@ -84,7 +88,7 @@ impl Request {
     fn command(&self) -> (&'static str, Value) {
         match &self.kind {
             Kind::Open => ("doc.open", self.params()),
-            Kind::Insert if solidcraft_engine::io::is_mesh_path(&self.path) => ("file.insert_mesh", self.params()),
+            Kind::Insert if self.mesh || solidcraft_engine::io::is_mesh_path(&self.path) => ("file.insert_mesh", self.params()),
             Kind::Insert if solidcraft_engine::io::is_point_cloud_path(&self.path) => ("pointcloud.insert", self.params()),
             Kind::Insert => (insert_command(&self.path), self.params()),
             Kind::Recover { id, dir } => ("doc.recover", json!({"id": id, "dir": dir})),
@@ -239,6 +243,11 @@ pub fn begin(app: &mut SolveApp, path: &str, insert: bool) {
     let _ = begin_request(app, Request::new(path, if insert { Kind::Insert } else { Kind::Open }));
 }
 
+/// Insert Mesh from the menu: a PLY goes in as a mesh, as the command says.
+pub fn begin_mesh(app: &mut SolveApp, path: &str) {
+    let _ = begin_request(app, Request { mesh: true, ..Request::new(path, Kind::Insert) });
+}
+
 /// Queue a file operation; on the web (no threads) it runs now.
 pub fn begin_request(app: &mut SolveApp, request: Request) -> Result<(), String> {
     if app.file_load.idle() && reuse_open(app, &request) {
@@ -371,7 +380,8 @@ pub fn control(app: &mut SolveApp, req: crate::control::ControlRequest) -> Optio
         options.remove("path");
         options.retain(|_, v| !v.is_null());
     }
-    let request = Request { path: path.into(), kind, reply: Some(req.reply.clone()), scope, options, allow_hosts: Vec::new(), design: None };
+    let mesh = command == Some("file.insert_mesh");
+    let request = Request { path: path.into(), kind, reply: Some(req.reply.clone()), scope, options, allow_hosts: Vec::new(), design: None, mesh };
     let _ = begin_request(app, request);
     None
 }
@@ -1285,6 +1295,14 @@ mod tests {
             h.app.insert_path(&path);
             assert_eq!(h.app.session.doc.sketch(new_id).unwrap().curves.len(), 4);
         }
+    }
+
+    #[test]
+    fn a_ply_insert_mesh_asked_for_goes_in_as_a_mesh() {
+        // a scanner's PLY (Creality Scan's result/Mesh.ply) went in as a point cloud from Insert Mesh
+        let request = Request { mesh: true, ..Request::new("result/Mesh.ply", Kind::Insert) };
+        assert_eq!(request.command().0, "file.insert_mesh");
+        assert_eq!(Request::new("result/Mesh.ply", Kind::Insert).command().0, "pointcloud.insert");
     }
 
     #[test]

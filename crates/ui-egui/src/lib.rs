@@ -1588,9 +1588,14 @@ impl SolveApp {
             return;
         }
         if matches!(id, "file.insert_step" | "file.insert_mesh" | "pointcloud.insert") {
-            self.pick_open(|app, path| {
+            let mesh = id == "file.insert_mesh";
+            self.pick_open(move |app, path| {
                 if let Some(path) = path {
-                    app.insert_path_async(&path);
+                    if mesh {
+                        file_load::begin_mesh(app, &path);
+                    } else {
+                        app.insert_path_async(&path);
+                    }
                 }
             });
             return;
