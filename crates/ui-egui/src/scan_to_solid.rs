@@ -47,6 +47,9 @@ struct Job {
     lines: Receiver<Line>,
     /// What the status line says it is running ("Load Test").
     label: String,
+    /// The latest thing it said, in this frame or an earlier one, was a last word (`answer`,
+    /// `refused` or `error`).
+    answered: bool,
 }
 
 impl Job {
@@ -137,7 +140,7 @@ fn spawn(args: &[String], label: &str, ctx: &egui::Context) -> Result<Job, Strin
     if let Some(err) = child.stderr.take() {
         read_lines(err, tx, Line::Err, ctx.clone());
     }
-    Ok(Job { child, lines: rx, label: label.to_owned() })
+    Ok(Job { child, lines: rx, label: label.to_owned(), answered: false })
 }
 
 fn read_lines<R: std::io::Read + Send + 'static>(stream: R, tx: Sender<Line>, wrap: fn(String) -> Line, ctx: egui::Context) {
@@ -343,17 +346,22 @@ impl ScanToSolid {
             let Some(job) = slot else { continue };
             let (out, err, done) = job.read();
             let label = job.label.clone();
+            let lines: Vec<Said> = out.iter().filter_map(|text| said(text)).collect();
+            // the last word and the end of the streams may be read in different frames; a watch's
+            // next run says more, and is unanswered again until it ends
+            if let Some(line) = lines.last() {
+                job.answered = line.last;
+            }
+            let answered = job.answered;
             if done {
                 *slot = None;
             }
             self.keep_stderr(err);
-            let mut finished = false;
-            for line in out.iter().filter_map(|text| said(text)) {
-                finished |= line.last;
+            for line in lines {
                 status_lines.push((if line.last { format!("{label}: {}", line.text) } else { format!("{label}… {}", line.text) }, line.failed));
             }
             // a run that ended without its last word crashed before it could say why
-            if done && !finished {
+            if done && !answered {
                 status_lines.push((format!("{label} stopped without an answer: {}", self.stderr.join("\n")), true));
             }
         }
@@ -516,29 +524,36 @@ mod tests {
         assert!(panel.watched("check") && !panel.watched("section"));
     }
 
-    /// A script that wrote its last word and exited at once: the word is read, then the job is done
-    /// (an exit seen before the reader passed the line on lost it, and the tab said the actions
-    /// could not be read).
-    #[test]
-    fn scan_to_solid_keeps_the_last_word_of_a_script_that_already_exited() {
+    /// A job whose script writes `{"answer": "Built"}` and exits, after about a second when `lingers`.
+    fn answering_job(lingers: bool) -> Job {
         #[cfg(windows)]
         let mut command = {
             use std::os::windows::process::CommandExt;
             let mut command = Command::new("cmd");
-            command.raw_arg("/C echo {\"answer\": \"Built\"}");
+            let wait = if lingers { " & ping -n 2 127.0.0.1 >nul" } else { "" };
+            command.raw_arg(format!("/C echo {{\"answer\": \"Built\"}}{wait}"));
             command
         };
         #[cfg(not(windows))]
         let mut command = {
             let mut command = Command::new("sh");
-            command.args(["-c", "echo '{\"answer\": \"Built\"}'"]);
+            let wait = if lingers { "; sleep 1" } else { "" };
+            command.args(["-c", &format!("echo '{{\"answer\": \"Built\"}}'{wait}")]);
             command
         };
         let mut child = command.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().expect("a shell starts");
         let (tx, rx) = channel();
         read_lines(child.stdout.take().expect("piped"), tx.clone(), Line::Out, egui::Context::default());
         read_lines(child.stderr.take().expect("piped"), tx, Line::Err, egui::Context::default());
-        let mut job = Job { child, lines: rx, label: "Build".into() };
+        Job { child, lines: rx, label: "Build".into(), answered: false }
+    }
+
+    /// A script that wrote its last word and exited at once: the word is read, then the job is done
+    /// (an exit seen before the reader passed the line on lost it, and the tab said the actions
+    /// could not be read).
+    #[test]
+    fn scan_to_solid_keeps_the_last_word_of_a_script_that_already_exited() {
+        let mut job = answering_job(false);
         let (mut out, mut done) = (Vec::new(), false);
         for _ in 0..200 {
             let (lines, _, finished) = job.read();
@@ -551,6 +566,23 @@ mod tests {
         }
         assert!(done, "the job ends once both streams are read");
         assert_eq!(out.iter().filter_map(|l| said(l)).map(|s| s.text).collect::<Vec<_>>(), ["Built"]);
+    }
+
+    /// The last word read one frame and the end of the script a later one: the run answered, it
+    /// did not stop without an answer (every run said both before).
+    #[test]
+    fn scan_to_solid_a_run_that_answered_before_it_ended_did_not_fail() {
+        let mut panel = ScanToSolid { running: Some(answering_job(true)), ..Default::default() };
+        let mut status_lines = Vec::new();
+        for _ in 0..200 {
+            status_lines.extend(panel.poll());
+            if panel.running.is_none() {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(25));
+        }
+        assert!(panel.running.is_none(), "the run ends");
+        assert_eq!(status_lines, [("Build: Built".to_owned(), false)]);
     }
 
     #[test]
