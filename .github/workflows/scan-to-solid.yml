@@ -1,0 +1,42 @@
+# The scan-to-solid fork's Windows x64 build: solidcraft.exe and solidcraft-cli.exe as one artifact,
+# unsigned, on every push to the scan-to-solid branch or by hand. Upstream's release.yml builds the
+# signed packages; this fork only needs the binaries the owner runs (docs/scan-to-solid.md).
+name: scan-to-solid windows
+
+on:
+  push:
+    branches: [scan-to-solid]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scan-to-solid-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    env:
+      CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS: -C target-feature=+crt-static
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: scan-to-solid-windows-x64
+      - name: Build
+        run: cargo build --release --locked -p solidcraft -p solidcraft-cli --target x86_64-pc-windows-msvc
+      - name: Test the scan-to-solid tab
+        run: |
+          cargo test --release --locked -p solidcraft-engine --target x86_64-pc-windows-msvc scan_to_solid
+          cargo test --release --locked -p solidcraft-ui-egui --target x86_64-pc-windows-msvc scan_to_solid
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: solidcraft-scan-to-solid-windows-x64
+          path: |
+            target/x86_64-pc-windows-msvc/release/solidcraft.exe
+            target/x86_64-pc-windows-msvc/release/solidcraft-cli.exe
