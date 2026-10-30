@@ -1782,6 +1782,98 @@ fn fillet_two_edges_meeting_at_a_corner_one_running_into_the_arc_wall() {
     assert!(rel(before - after, removed) < 1e-3, "removed {} vs {removed}", before - after);
 }
 
+/// How long a fillet on a sheet's bend below may run before it counts as hanging, and a search
+/// for the radius that fits there (a fillet per radius tried). Rounds there ran for minutes (over
+/// 90 s for one edge in the app, which cannot cancel a command, the Ramka panel, 2026-10-30): a
+/// refusal took 4 to 13 s, the search 42 s. Alone they take 1 to 2.5 s and 11 s now, many times
+/// that while the whole suite runs, so these only catch a hang.
+const BEND_FILLET_LIMIT: std::time::Duration = std::time::Duration::from_secs(20);
+const BEND_SEARCH_LIMIT: std::time::Duration = std::time::Duration::from_secs(120);
+
+/// `solid.fillet` with `params` on a copy of `s`: how long it took, what it said, and the copy.
+/// A fillet still running after `limit` fails the test (its thread is left to finish).
+fn bend_fillet(s: &Session, params: Value, limit: std::time::Duration) -> (std::time::Duration, crate::Result<Value>, Session) {
+    let (tx, rx) = std::sync::mpsc::channel();
+    let mut copy = s.scratch();
+    std::thread::spawn(move || {
+        let start = std::time::Instant::now();
+        let made = copy.execute("solid.fillet", &params);
+        let _ = tx.send((start.elapsed(), made, copy));
+    });
+    match rx.recv_timeout(limit) {
+        Ok(done) => done,
+        Err(_) => panic!("the fillet did not finish within {limit:?}"),
+    }
+}
+
+/// A slotted sheet: a side profile on XZ (sketch y = −Z) of a slab 5 below to 5 above z = 0 whose
+/// top runs from x = 0 to 20 and then bends down along a tangent arc of radius 20 (axis at x = 20,
+/// z = −15) to 45 degrees, extruded 20 along +Y; intersected with an outline 40 × 20 on XY with a
+/// slot 4 wide from x = 10 out to the end, so the slot runs from the flat top onto the bend.
+fn slotted_bent_sheet() -> Session {
+    let mut s = Session::default();
+    let end = [20.0 + 20.0 * std::f64::consts::FRAC_1_SQRT_2, -15.0 + 20.0 * std::f64::consts::FRAC_1_SQRT_2];
+    run(&mut s, "sketch.create", json!({"plane": "XZ", "name": "Side"}));
+    run(&mut s, "sketch.line", json!({"points": [[20, -5], [0, -5], [0, 5], [end[0], 5], [end[0], -end[1]]]}));
+    run(&mut s, "sketch.arc.center_point", json!({"center": [20, 15], "start": [20, -5], "end": [end[0], -end[1]]}));
+    run(&mut s, "sketch.finish", json!({}));
+    run(&mut s, "solid.extrude", json!({"sketch": "Side", "distance": 20, "body_name": "Panel"}));
+    run(&mut s, "sketch.create", json!({"plane": "XY", "name": "Outline"}));
+    run(&mut s, "sketch.line", json!({"points": [[0, 0], [40, 0], [40, 8], [10, 8], [10, 12], [40, 12], [40, 20], [0, 20]], "closed": true}));
+    run(&mut s, "sketch.finish", json!({}));
+    run(
+        &mut s,
+        "solid.extrude",
+        json!({"sketch": "Outline", "through_all": true, "direction": "symmetric", "operation": "intersect", "targets": ["Panel"]}),
+    );
+    s
+}
+
+/// The Ramka panel as drawn in Scan To Solid (its side profile with two bends, extruded, then
+/// intersected with its outline), without the scan it was traced from.
+fn ramka_panel() -> Session {
+    let text = include_str!("../../../../tests/fillet/ramka_panel.json");
+    Session::new(solidcraft_doc::Document::from_json(text).unwrap())
+}
+
+/// The slot's top edge on the flat, at y = 8, runs on over the bend as an arc: the round of 1
+/// follows both, the line (10 long) and the arc (π/4 × 20 on the bend's surface), within the
+/// difference between the arc's length on the surface and along the round's middle.
+#[test]
+fn fillet_a_slot_edge_that_runs_from_the_flat_onto_the_bend() {
+    let mut s = slotted_bent_sheet();
+    let before = run(&mut s, "inspect.measure", json!({}))["total"]["volume_mm3"].as_f64().unwrap();
+    let (took, made, mut s) = bend_fillet(&s, json!({"edges": [[15.0, 8.0, 5.0]], "radius": 1}), BEND_FILLET_LIMIT);
+    made.unwrap_or_else(|e| panic!("refused after {took:?}: {e}"));
+    let after = run(&mut s, "inspect.measure", json!({}))["total"]["volume_mm3"].as_f64().unwrap();
+    let removed = (1.0 - std::f64::consts::FRAC_PI_4) * (10.0 + std::f64::consts::FRAC_PI_4 * 20.0);
+    assert!(rel(before - after, removed) < 0.1, "removed {} vs about {removed}", before - after);
+}
+
+/// Where the Ramka's outline wall meets the outside of a bend: the edge's smooth chain runs on
+/// round the outline over ten edges, and the rolling ball's strip misses its sections there at
+/// every spacing. Refused once two spacings miss (it took 13 s, refining to 369 sections).
+#[test]
+fn fillet_where_an_outline_meets_the_outside_of_a_bend_is_refused_quickly() {
+    let s = ramka_panel();
+    let (took, made, _) = bend_fillet(&s, json!({"edges": [[-104.055, -91.464, 1.852]], "radius": 1, "body": "ramka panel"}), BEND_FILLET_LIMIT);
+    let e = made.expect_err("the round of the outline's edge on the bend");
+    assert!(e.to_string().contains("misses the ball's sections"), "after {took:?}: {e}");
+}
+
+/// The Ramka's outer top edge, a line on the flat that runs onto a bend at each end, with the
+/// radius reduced to what fits (as Scan To Solid's Round asks): R 1 doesn't fit past its ends,
+/// and the search for the radius that does tries ten, healing the panel once for all of them.
+#[test]
+fn fillet_reduced_on_an_edge_running_onto_bends_finishes() {
+    let s = ramka_panel();
+    let (took, made, _) =
+        bend_fillet(&s, json!({"edges": [[37.67, 93.68, 3.3]], "radius": 1, "body": "ramka panel", "fit": "reduce"}), BEND_SEARCH_LIMIT);
+    let made = made.unwrap_or_else(|e| panic!("refused after {took:?}: {e}"));
+    let applied = made["radius_applied"].as_f64().unwrap();
+    assert!(applied > 0.0 && applied < 1.0, "the radius applied: {applied}");
+}
+
 /// A line of text cut into a block (#391): the boolean came out empty on it after two minutes
 /// of retries, at 3.5 mm deep. Two walls of a letter met the block's face 2e-7 mm apart, which
 /// truck read as two vertices, and the result's shell did not close. The cut works at any

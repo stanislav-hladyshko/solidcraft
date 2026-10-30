@@ -1,0 +1,1295 @@
+{
+ "format": "solidcraft/43",
+ "units": "mm",
+ "params": [
+  {
+   "expr": "10.5",
+   "model": true,
+   "name": "d3",
+   "unit": "mm"
+  },
+  {
+   "expr": "7",
+   "model": true,
+   "name": "d4",
+   "unit": "mm"
+  },
+  {
+   "expr": "3.5",
+   "model": true,
+   "name": "d5",
+   "unit": "mm"
+  },
+  {
+   "expr": "9",
+   "model": true,
+   "name": "d6",
+   "unit": "mm"
+  },
+  {
+   "expr": "3",
+   "model": true,
+   "name": "d7",
+   "unit": "mm"
+  },
+  {
+   "expr": "3.5",
+   "model": true,
+   "name": "d8",
+   "unit": "mm"
+  },
+  {
+   "expr": "2",
+   "model": true,
+   "name": "d9",
+   "unit": "mm"
+  },
+  {
+   "expr": "3.5",
+   "model": true,
+   "name": "d10",
+   "unit": "mm"
+  },
+  {
+   "expr": "1",
+   "model": true,
+   "name": "d11",
+   "unit": "mm"
+  },
+  {
+   "expr": "3",
+   "model": true,
+   "name": "d12",
+   "unit": "mm"
+  },
+  {
+   "expr": "1",
+   "model": true,
+   "name": "d13",
+   "unit": "mm"
+  },
+  {
+   "expr": "2.5",
+   "model": true,
+   "name": "d14",
+   "unit": "mm"
+  }
+ ],
+ "next_id": 149,
+ "name": "ramka panel",
+ "features": [
+  {
+   "id": 145,
+   "name": "ramka panel side",
+   "plane": {
+    "plane": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "x_dir": [
+      0.9866291130163011,
+      -0.1629815736476581,
+      0.0
+     ],
+     "y_dir": [
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    "type": "custom"
+   },
+   "sketch": {
+    "constraints": [
+     {
+      "id": "k1",
+      "p": 2,
+      "q": 4,
+      "type": "coincident"
+     },
+     {
+      "id": "k2",
+      "p": 5,
+      "q": 6,
+      "type": "coincident"
+     },
+     {
+      "id": "k3",
+      "p": 1,
+      "q": 8,
+      "type": "coincident"
+     },
+     {
+      "id": "k4",
+      "p": 3,
+      "q": 13,
+      "type": "coincident"
+     },
+     {
+      "id": "k5",
+      "p": 12,
+      "q": 14,
+      "type": "coincident"
+     },
+     {
+      "id": "k6",
+      "p": 15,
+      "q": 16,
+      "type": "coincident"
+     },
+     {
+      "id": "k7",
+      "p": 11,
+      "q": 18,
+      "type": "coincident"
+     },
+     {
+      "id": "k8",
+      "p": 10,
+      "q": 20,
+      "type": "coincident"
+     },
+     {
+      "id": "k9",
+      "p": 9,
+      "q": 21,
+      "type": "coincident"
+     },
+     {
+      "id": "k10",
+      "p": 19,
+      "q": 22,
+      "type": "coincident"
+     },
+     {
+      "id": "k11",
+      "p": 7,
+      "q": 23,
+      "type": "coincident"
+     },
+     {
+      "id": "k12",
+      "p": 17,
+      "q": 24,
+      "type": "coincident"
+     }
+    ],
+    "counters": {
+     "a": 4,
+     "k": 12,
+     "l": 6
+    },
+    "curves": [
+     {
+      "a": 1,
+      "b": 2,
+      "construction": false,
+      "id": "l1",
+      "type": "line"
+     },
+     {
+      "a": 4,
+      "b": 5,
+      "c": 3,
+      "construction": false,
+      "id": "a1",
+      "type": "arc"
+     },
+     {
+      "a": 6,
+      "b": 7,
+      "construction": false,
+      "id": "l2",
+      "type": "line"
+     },
+     {
+      "a": 9,
+      "b": 8,
+      "c": 10,
+      "construction": false,
+      "id": "a2",
+      "reversed": true,
+      "type": "arc"
+     },
+     {
+      "a": 11,
+      "b": 12,
+      "construction": false,
+      "id": "l3",
+      "type": "line"
+     },
+     {
+      "a": 14,
+      "b": 15,
+      "c": 13,
+      "construction": false,
+      "id": "a3",
+      "type": "arc"
+     },
+     {
+      "a": 16,
+      "b": 17,
+      "construction": false,
+      "id": "l4",
+      "type": "line"
+     },
+     {
+      "a": 19,
+      "b": 18,
+      "c": 20,
+      "construction": false,
+      "id": "a4",
+      "reversed": true,
+      "type": "arc"
+     },
+     {
+      "a": 21,
+      "b": 22,
+      "construction": false,
+      "id": "l5",
+      "type": "line"
+     },
+     {
+      "a": 23,
+      "b": 24,
+      "construction": false,
+      "id": "l6",
+      "type": "line"
+     }
+    ],
+    "points": [
+     {
+      "fixed": true,
+      "id": "origin",
+      "pos": [
+       0.0,
+       0.0
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "l1.start",
+      "pos": [
+       -76.1,
+       0.4
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "l1.end",
+      "pos": [
+       119.9,
+       0.4
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a1.center",
+      "pos": [
+       119.9,
+       5.4
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a1.start",
+      "pos": [
+       119.9,
+       0.4
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a1.end",
+      "pos": [
+       124.9,
+       5.4
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "l2.start",
+      "pos": [
+       124.9,
+       5.4
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "l2.end",
+      "pos": [
+       124.9,
+       11.9
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a2.start",
+      "pos": [
+       -76.1,
+       0.4
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a2.end",
+      "pos": [
+       -121.3,
+       33.298287771634456
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a2.center",
+      "pos": [
+       -76.1,
+       47.9
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "l3.start",
+      "pos": [
+       -76.1,
+       3.3000000000000003
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "l3.end",
+      "pos": [
+       119.9,
+       3.3000000000000003
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a3.center",
+      "pos": [
+       119.9,
+       5.4
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a3.start",
+      "pos": [
+       119.9,
+       3.3000000000000003
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a3.end",
+      "pos": [
+       122.0,
+       5.4
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "l4.start",
+      "pos": [
+       122.0,
+       5.4
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "l4.end",
+      "pos": [
+       122.0,
+       11.9
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a4.start",
+      "pos": [
+       -76.1,
+       3.3000000000000003
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a4.end",
+      "pos": [
+       -118.54042105263159,
+       34.18976072873467
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a4.center",
+      "pos": [
+       -76.1,
+       47.9
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "l5.start",
+      "pos": [
+       -121.3,
+       33.298287771634456
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "l5.end",
+      "pos": [
+       -118.54042105263159,
+       34.18976072873467
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "l6.start",
+      "pos": [
+       124.9,
+       11.9
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "l6.end",
+      "pos": [
+       122.0,
+       11.9
+      ]
+     }
+    ]
+   },
+   "suppressed": false,
+   "type": "sketch"
+  },
+  {
+   "body_names": [
+    "ramka panel"
+   ],
+   "extent": {
+    "convention": "total_distance",
+    "direction": "positive",
+    "distance": "136.8",
+    "distance2": "136.8"
+   },
+   "id": 146,
+   "name": "ramka panel profile",
+   "operation": "new_body",
+   "param_names": [
+    "d1",
+    "d2"
+   ],
+   "profiles": {
+    "loops": [
+     [
+      "l1",
+      "a1",
+      "l2",
+      "l6",
+      "l4",
+      "a3",
+      "l3",
+      "a4",
+      "l5",
+      "a2"
+     ]
+    ],
+    "type": "curves"
+   },
+   "sketch": 145,
+   "suppressed": false,
+   "type": "extrude"
+  },
+  {
+   "id": 147,
+   "name": "ramka panel outline",
+   "plane": {
+    "plane": {
+     "origin": [
+      0.0,
+      0.0,
+      -0.6
+     ],
+     "x_dir": [
+      0.9866291130163011,
+      -0.1629815736476581,
+      0.0
+     ],
+     "y_dir": [
+      0.1629815736476581,
+      0.9866291130163011,
+      0.0
+     ]
+    },
+    "type": "custom"
+   },
+   "sketch": {
+    "constraints": [
+     {
+      "a": 0,
+      "b": 4,
+      "id": "k5",
+      "type": "tangent"
+     },
+     {
+      "a": 1,
+      "b": 4,
+      "id": "k6",
+      "type": "tangent"
+     },
+     {
+      "c": 4,
+      "id": "k7",
+      "param": "d3",
+      "type": "radius",
+      "value": 10.5
+     },
+     {
+      "a": 1,
+      "b": 5,
+      "id": "k8",
+      "type": "tangent"
+     },
+     {
+      "a": 2,
+      "b": 5,
+      "id": "k9",
+      "type": "tangent"
+     },
+     {
+      "c": 5,
+      "id": "k10",
+      "param": "d4",
+      "type": "radius",
+      "value": 7.0
+     },
+     {
+      "a": 2,
+      "b": 6,
+      "id": "k11",
+      "type": "tangent"
+     },
+     {
+      "a": 3,
+      "b": 6,
+      "id": "k12",
+      "type": "tangent"
+     },
+     {
+      "c": 6,
+      "id": "k13",
+      "param": "d5",
+      "type": "radius",
+      "value": 3.5
+     },
+     {
+      "a": 0,
+      "b": 7,
+      "id": "k14",
+      "type": "tangent"
+     },
+     {
+      "a": 3,
+      "b": 7,
+      "id": "k15",
+      "type": "tangent"
+     },
+     {
+      "c": 7,
+      "id": "k16",
+      "param": "d6",
+      "type": "radius",
+      "value": 9.0
+     },
+     {
+      "a": 8,
+      "b": 12,
+      "id": "k21",
+      "type": "tangent"
+     },
+     {
+      "a": 9,
+      "b": 12,
+      "id": "k22",
+      "type": "tangent"
+     },
+     {
+      "c": 12,
+      "id": "k23",
+      "param": "d7",
+      "type": "radius",
+      "value": 3.0
+     },
+     {
+      "a": 9,
+      "b": 13,
+      "id": "k24",
+      "type": "tangent"
+     },
+     {
+      "a": 10,
+      "b": 13,
+      "id": "k25",
+      "type": "tangent"
+     },
+     {
+      "c": 13,
+      "id": "k26",
+      "param": "d8",
+      "type": "radius",
+      "value": 3.5
+     },
+     {
+      "a": 10,
+      "b": 14,
+      "id": "k27",
+      "type": "tangent"
+     },
+     {
+      "a": 11,
+      "b": 14,
+      "id": "k28",
+      "type": "tangent"
+     },
+     {
+      "c": 14,
+      "id": "k29",
+      "param": "d9",
+      "type": "radius",
+      "value": 2.0
+     },
+     {
+      "a": 8,
+      "b": 15,
+      "id": "k30",
+      "type": "tangent"
+     },
+     {
+      "a": 11,
+      "b": 15,
+      "id": "k31",
+      "type": "tangent"
+     },
+     {
+      "c": 15,
+      "id": "k32",
+      "param": "d10",
+      "type": "radius",
+      "value": 3.5
+     },
+     {
+      "a": 16,
+      "b": 20,
+      "id": "k37",
+      "type": "tangent"
+     },
+     {
+      "a": 17,
+      "b": 20,
+      "id": "k38",
+      "type": "tangent"
+     },
+     {
+      "c": 20,
+      "id": "k39",
+      "param": "d11",
+      "type": "radius",
+      "value": 1.0
+     },
+     {
+      "a": 17,
+      "b": 21,
+      "id": "k40",
+      "type": "tangent"
+     },
+     {
+      "a": 18,
+      "b": 21,
+      "id": "k41",
+      "type": "tangent"
+     },
+     {
+      "c": 21,
+      "id": "k42",
+      "param": "d12",
+      "type": "radius",
+      "value": 3.0
+     },
+     {
+      "a": 18,
+      "b": 22,
+      "id": "k43",
+      "type": "tangent"
+     },
+     {
+      "a": 19,
+      "b": 22,
+      "id": "k44",
+      "type": "tangent"
+     },
+     {
+      "c": 22,
+      "id": "k45",
+      "param": "d13",
+      "type": "radius",
+      "value": 1.0
+     },
+     {
+      "a": 16,
+      "b": 23,
+      "id": "k46",
+      "type": "tangent"
+     },
+     {
+      "a": 19,
+      "b": 23,
+      "id": "k47",
+      "type": "tangent"
+     },
+     {
+      "c": 23,
+      "id": "k48",
+      "param": "d14",
+      "type": "radius",
+      "value": 2.5
+     }
+    ],
+    "counters": {
+     "a": 13,
+     "k": 48,
+     "l": 11,
+     "p": 24
+    },
+    "curves": [
+     {
+      "a": 11,
+      "b": 2,
+      "construction": false,
+      "id": "l1",
+      "type": "line"
+     },
+     {
+      "a": 3,
+      "b": 5,
+      "construction": false,
+      "id": "l2",
+      "type": "line"
+     },
+     {
+      "a": 6,
+      "b": 8,
+      "construction": false,
+      "id": "l3",
+      "type": "line"
+     },
+     {
+      "a": 12,
+      "b": 9,
+      "c": 1,
+      "construction": false,
+      "id": "a1",
+      "reversed": true,
+      "type": "arc"
+     },
+     {
+      "a": 3,
+      "b": 2,
+      "c": 4,
+      "construction": false,
+      "id": "a2",
+      "type": "arc"
+     },
+     {
+      "a": 6,
+      "b": 5,
+      "c": 7,
+      "construction": false,
+      "id": "a3",
+      "type": "arc"
+     },
+     {
+      "a": 9,
+      "b": 8,
+      "c": 10,
+      "construction": false,
+      "id": "a4",
+      "type": "arc"
+     },
+     {
+      "a": 11,
+      "b": 12,
+      "c": 13,
+      "construction": false,
+      "id": "a5",
+      "type": "arc"
+     },
+     {
+      "a": 23,
+      "b": 14,
+      "construction": false,
+      "id": "l4",
+      "type": "line"
+     },
+     {
+      "a": 15,
+      "b": 17,
+      "construction": false,
+      "id": "l5",
+      "type": "line"
+     },
+     {
+      "a": 18,
+      "b": 20,
+      "construction": false,
+      "id": "l6",
+      "type": "line"
+     },
+     {
+      "a": 21,
+      "b": 24,
+      "construction": false,
+      "id": "l7",
+      "type": "line"
+     },
+     {
+      "a": 15,
+      "b": 14,
+      "c": 16,
+      "construction": false,
+      "id": "a6",
+      "type": "arc"
+     },
+     {
+      "a": 18,
+      "b": 17,
+      "c": 19,
+      "construction": false,
+      "id": "a7",
+      "type": "arc"
+     },
+     {
+      "a": 21,
+      "b": 20,
+      "c": 22,
+      "construction": false,
+      "id": "a8",
+      "type": "arc"
+     },
+     {
+      "a": 23,
+      "b": 24,
+      "c": 25,
+      "construction": false,
+      "id": "a9",
+      "type": "arc"
+     },
+     {
+      "a": 35,
+      "b": 26,
+      "construction": false,
+      "id": "l8",
+      "type": "line"
+     },
+     {
+      "a": 27,
+      "b": 29,
+      "construction": false,
+      "id": "l9",
+      "type": "line"
+     },
+     {
+      "a": 30,
+      "b": 32,
+      "construction": false,
+      "id": "l10",
+      "type": "line"
+     },
+     {
+      "a": 33,
+      "b": 36,
+      "construction": false,
+      "id": "l11",
+      "type": "line"
+     },
+     {
+      "a": 27,
+      "b": 26,
+      "c": 28,
+      "construction": false,
+      "id": "a10",
+      "type": "arc"
+     },
+     {
+      "a": 30,
+      "b": 29,
+      "c": 31,
+      "construction": false,
+      "id": "a11",
+      "type": "arc"
+     },
+     {
+      "a": 33,
+      "b": 32,
+      "c": 34,
+      "construction": false,
+      "id": "a12",
+      "type": "arc"
+     },
+     {
+      "a": 35,
+      "b": 36,
+      "c": 37,
+      "construction": false,
+      "id": "a13",
+      "type": "arc"
+     }
+    ],
+    "points": [
+     {
+      "fixed": true,
+      "id": "origin",
+      "pos": [
+       0.0,
+       0.0
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a1.center",
+      "pos": [
+       -119.84018391314028,
+       974.9050299135894
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p1",
+      "pos": [
+       -118.80000000000001,
+       98.97965762740581
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p2",
+      "pos": [
+       -107.41985043887146,
+       109.44270387360224
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a2.center",
+      "pos": [
+       -108.30000000000001,
+       98.97965762740581
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p3",
+      "pos": [
+       121.4867663740857,
+       90.18712059635308
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p4",
+      "pos": [
+       127.9,
+       83.21175643222213
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a3.center",
+      "pos": [
+       120.9,
+       83.21175643222213
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p5",
+      "pos": [
+       127.9,
+       -100.92448685450847
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p6",
+      "pos": [
+       125.17486980365108,
+       -104.33763449083915
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a4.center",
+      "pos": [
+       124.4,
+       -100.92448685450847
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p7",
+      "pos": [
+       -118.80000000000001,
+       -122.75457150581637
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p8",
+      "pos": [
+       -109.71768133285725,
+       -131.75419503333353
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a5.center",
+      "pos": [
+       -109.80000000000001,
+       -122.75457150581637
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p9",
+      "pos": [
+       58.7,
+       70.7
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p10",
+      "pos": [
+       61.7,
+       73.7
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a6.center",
+      "pos": [
+       61.7,
+       70.7
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p11",
+      "pos": [
+       99.7,
+       73.7
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p12",
+      "pos": [
+       103.2,
+       70.2
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a7.center",
+      "pos": [
+       99.7,
+       70.2
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p13",
+      "pos": [
+       103.2,
+       -92.60000000000001
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p14",
+      "pos": [
+       101.2,
+       -94.60000000000001
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a8.center",
+      "pos": [
+       101.2,
+       -92.60000000000001
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p15",
+      "pos": [
+       58.7,
+       -91.10000000000001
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p16",
+      "pos": [
+       62.2,
+       -94.60000000000001
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a9.center",
+      "pos": [
+       62.2,
+       -91.10000000000001
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p17",
+      "pos": [
+       -101.2,
+       82.80000000000001
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p18",
+      "pos": [
+       -100.2,
+       83.80000000000001
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a10.center",
+      "pos": [
+       -100.2,
+       82.80000000000001
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p19",
+      "pos": [
+       42.400000000000006,
+       83.80000000000001
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p20",
+      "pos": [
+       45.400000000000006,
+       80.80000000000001
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a11.center",
+      "pos": [
+       42.400000000000006,
+       80.80000000000001
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p21",
+      "pos": [
+       45.400000000000006,
+       -106.2
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p22",
+      "pos": [
+       44.400000000000006,
+       -107.2
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a12.center",
+      "pos": [
+       44.400000000000006,
+       -106.2
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p23",
+      "pos": [
+       -101.2,
+       -104.7
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "p24",
+      "pos": [
+       -98.7,
+       -107.2
+      ]
+     },
+     {
+      "fixed": false,
+      "id": "a13.center",
+      "pos": [
+       -98.7,
+       -104.7
+      ]
+     }
+    ]
+   },
+   "suppressed": false,
+   "type": "sketch"
+  },
+  {
+   "extent": {
+    "convention": "total_distance",
+    "direction": "positive",
+    "distance": "39.8"
+   },
+   "id": 148,
+   "name": "ramka panel outline cut",
+   "operation": "intersect",
+   "param_names": [
+    "d15"
+   ],
+   "profiles": {
+    "loops": [
+     [
+      "l1",
+      "a5",
+      "a1",
+      "a4",
+      "l3",
+      "a3",
+      "l2",
+      "a2"
+     ]
+    ],
+    "type": "curves"
+   },
+   "sketch": 147,
+   "suppressed": false,
+   "targets": [
+    "ramka panel"
+   ],
+   "type": "extrude"
+  }
+ ]
+}
