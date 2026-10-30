@@ -202,44 +202,54 @@ fn fit_strip(list: &[Section], before: &[Section], after: &[Section], round: boo
     Ok(Fit { surface: mt::Surface::NurbsSurface(mt::NurbsSurface::new(bs)), contacts, range, span: (0.0, 1.0) })
 }
 
-/// Compare the fitted strip with a solved circular section between interpolation nodes.
-/// This checks the supporting contacts as well as the middle of the fillet band.
+/// Whether the fitted strip lies within `tolerance` of the section at `along` ([`section_error`]).
 fn section_fits(fit: &Fit, section: &Section, along: f64, round: bool, sigma: f64, tolerance: f64) -> bool {
+    section_error(fit, section, along, round, sigma) <= tolerance
+}
+
+/// Compare the fitted strip with a solved circular section between interpolation nodes: how far
+/// it lies from the section at `along` (the largest distance of five probes, the supporting
+/// contacts and the middle of the fillet band). Infinite where the strip misses the section: a
+/// probe finds no point on it, or, for a round, it doesn't meet a face square to the ball at a
+/// contact.
+fn section_error(fit: &Fit, section: &Section, along: f64, round: bool, sigma: f64) -> f64 {
     use mt::{ParametricSurface, ParametricSurface3D, SearchNearestParameter};
-    let Some(ctrl) = section_controls(section, round) else { return false };
+    let Some(ctrl) = section_controls(section, round) else { return f64::INFINITY };
     let v = fit.range.0 + (fit.range.1 - fit.range.0) * along;
+    let mut worst = 0.0f64;
     for u in [0.0, 0.25, 0.5, 0.75, 1.0] {
         let [a, b, c] = ctrl;
         let h = a * (1.0 - u) * (1.0 - u) + b * (2.0 * u * (1.0 - u)) + c * u * u;
         if !h.w.is_finite() || h.w <= 1e-12 {
-            return false;
+            return f64::INFINITY;
         }
         let exact = Vec3::new(h.x / h.w, h.y / h.w, h.z / h.w);
         // The input intersection edge may use piecewise leader-curve parameters. A
         // parameter-speed change is not a geometric error: compare nearest points, with
         // contacts constrained to the corresponding boundary and all probes to the strip.
         let (probe_u, probe_v) = if u == 0.0 || u == 1.0 {
-            let Some(contact) = fit.contacts.get(usize::from(u == 1.0)) else { return false };
-            let Some(parameter) = contact.search_nearest_parameter(p3(exact), v, 32) else { return false };
+            let Some(contact) = fit.contacts.get(usize::from(u == 1.0)) else { return f64::INFINITY };
+            let Some(parameter) = contact.search_nearest_parameter(p3(exact), v, 32) else { return f64::INFINITY };
             (u, parameter.clamp(fit.range.0, fit.range.1))
         } else {
-            let Some((pu, pv)) = fit.surface.search_nearest_parameter(p3(exact), Some((u, v)), 32) else { return false };
+            let Some((pu, pv)) = fit.surface.search_nearest_parameter(p3(exact), Some((u, v)), 32) else { return f64::INFINITY };
             (pu.clamp(0.0, 1.0), pv.clamp(fit.range.0, fit.range.1))
         };
         let actual = from_p3(fit.surface.subs(probe_u, probe_v));
-        if !actual.is_finite() || actual.dist(exact) > tolerance {
-            return false;
+        if !actual.is_finite() {
+            return f64::INFINITY;
         }
+        worst = worst.max(actual.dist(exact));
         if round && (u == 0.0 || u == 1.0) {
-            let Some(want) = ((section.c - exact) * sigma).normalized() else { return false };
+            let Some(want) = ((section.c - exact) * sigma).normalized() else { return f64::INFINITY };
             let normal = fit.surface.normal(probe_u, probe_v);
-            let Some(normal) = Vec3::new(normal.x, normal.y, normal.z).normalized() else { return false };
+            let Some(normal) = Vec3::new(normal.x, normal.y, normal.z).normalized() else { return f64::INFINITY };
             if normal.dot(want).abs() < 0.5f64.to_radians().cos() {
-                return false;
+                return f64::INFINITY;
             }
         }
     }
-    true
+    worst
 }
 
 /// Where a blend strip run on past a chain end meets the end face: the contacts' parameters
@@ -1648,6 +1658,8 @@ fn curve_blend_sized(solid: &Solid, ids: &[mt::EdgeID], size: f64, size_law: Siz
         sizer.section(&a1, &a2, anchor, t, frac_at(k, along), sigma, cusp, None).ok_or_else(|| sizer.refusal())
     };
     let mut samples = SAMPLES.min(max_samples);
+    // Whether the last spacing tried left a section the strip misses (see below).
+    let mut missed_before = false;
     let (esec, fits) = loop {
         if n.checked_mul(samples).is_none_or(|count| count > MAX_CHAIN_SAMPLES) {
             return Err(unsupported("curve blend exceeds the section fitting limit"));
@@ -1778,7 +1790,10 @@ fn curve_blend_sized(solid: &Solid, ids: &[mt::EdgeID], size: f64, size_law: Siz
             fit.span = guides.get(k).and_then(Option::as_ref).map(|g| g.span).unwrap_or((0.0, 1.0));
             fits.push(Some(fit));
         }
+        // Checked until a section the strip misses altogether: a fit merely off by more than
+        // the tolerance is looked past, so such a miss anywhere is found.
         let mut accurate = true;
+        let mut missed = false;
         'edges: for k in 0..n {
             let Some(Some(fit)) = fits.get(k) else { continue };
             for j in 0..samples - 1 {
@@ -1793,9 +1808,13 @@ fn curve_blend_sized(solid: &Solid, ids: &[mt::EdgeID], size: f64, size_law: Siz
                         continue;
                     }
                     let section = uniform_section(k, along)?;
-                    if !crate::guard("check curve blend fit", || Ok(section_fits(fit, &section, along, round, sigma, fit_tolerance)))? {
+                    let error = crate::guard("check curve blend fit", || Ok(section_error(fit, &section, along, round, sigma)))?;
+                    if error > fit_tolerance {
                         accurate = false;
-                        break 'edges;
+                        if error == f64::INFINITY {
+                            missed = true;
+                            break 'edges;
+                        }
                     }
                 }
             }
@@ -1803,6 +1822,12 @@ fn curve_blend_sized(solid: &Solid, ids: &[mt::EdgeID], size: f64, size_law: Siz
         if accurate {
             break (esec, fits);
         }
+        // Missed at two spacings in a row: more sections don't bring the strip to it (the Ramka
+        // panel's bend, 2026-10-30: missed from 24 sections to 369, ten seconds to refuse).
+        if missed && missed_before {
+            return Err(KernelError::Failed("curve blend: the rolling-ball surface misses the ball's sections at any spacing".into()));
+        }
+        missed_before = missed;
         if samples >= max_samples {
             return Err(KernelError::Failed("curve blend: could not fit the rolling-ball surface within the accuracy and section limits".into()));
         }
