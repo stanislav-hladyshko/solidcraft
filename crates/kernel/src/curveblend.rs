@@ -55,6 +55,9 @@ const CHORD_STEPS: usize = 12;
 const CLOSED: f64 = 1e-7;
 /// Parameters an edge is sampled at to measure the arc length a radius law is read off.
 const LENGTH_STEPS: usize = 64;
+/// The ball's centre this many radii from a chain's end vertex: the faces there close to a wedge
+/// narrower than 39 degrees (a right angle holds it 1.41 radii away).
+const NARROW_WEDGE: f64 = 3.0;
 
 /// The ball's size along the edge chain.
 #[derive(Clone, Copy)]
@@ -1619,7 +1622,15 @@ fn curve_blend_sized(solid: &Solid, ids: &[mt::EdgeID], size: f64, size_law: Siz
                 // A size asked for beyond what the faces around the end hold is refused as such;
                 // one radius past the end is the rolling ball's own failure to fit.
                 None => {
+                    // The faces closing to a narrow wedge at the end (a sheet's end curling up
+                    // against an outline wall, the Ramka panel: 18 degrees) hold the ball far back
+                    // from it, and past the end it fits nowhere: a smaller one sits nearer the end.
+                    let back = at.c.dist(*p);
+                    let held_back = fixed.is_some_and(|r| back > NARROW_WEDGE * r);
                     return Err(match size_law {
+                        Size::Constant(_) if held_back => KernelError::TooLarge(format!(
+                            "the faces close to a narrow wedge where the edge ends: the ball sits {back:.2} back from the end and doesn't reach the end face"
+                        )),
                         Size::Constant(_) => unsupported("the ball doesn't fit past the end of the edge"),
                         _ => too_large("the blend is larger than the neighbouring faces (site 1472)"),
                     });

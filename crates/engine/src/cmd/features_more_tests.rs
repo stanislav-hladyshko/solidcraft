@@ -1879,8 +1879,20 @@ fn fillet_where_a_window_meets_the_outside_of_a_bend() {
     assert!(rel(before - after, removed) < 0.1, "removed {} vs about {removed}", before - after);
 }
 
+/// The Ramka's outer top edge runs from the flat over the left bend to the sheet's end, where the
+/// bend has curled up to 72° against the outline's upright wall: they meet at 18°, and a ball of
+/// radius 1 sits 6.2 back from the edge's end there, short of the end face. Refused as too large
+/// (a smaller ball sits nearer the end), saying why.
+#[test]
+fn fillet_where_a_sheet_ends_in_a_narrow_wedge_is_refused_as_too_large() {
+    let s = ramka_panel();
+    let (took, made, _) = bend_fillet(&s, json!({"edges": [[37.67, 93.68, 3.3]], "radius": 1, "body": "ramka panel"}), BEND_FILLET_LIMIT);
+    let e = made.expect_err("the round of the outer top edge");
+    assert!(e.to_string().contains("narrow wedge where the edge ends"), "after {took:?}: {e}");
+}
+
 /// The Ramka's outer top edge with the radius reduced to what fits (as Scan To Solid's Round
-/// asks): R 1 doesn't reach the sheet's end, and the search for the radius that does
+/// asks): R 1 doesn't reach the sheet's end (above), and the search for the radius that does
 /// tries ten, healing the panel once for all of them.
 #[test]
 fn fillet_reduced_on_an_edge_running_onto_bends_finishes() {
