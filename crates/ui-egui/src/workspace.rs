@@ -107,7 +107,7 @@ pub const SECTIONS: &[Section] = &[
         ids: &["scan.repair", "scan.feature", "scan.modify", "scan.ignore", "scan.keep"],
     },
     Section { tab: "SCAN TO SOLID", panel: "BODY FEATURE", promoted: 3, ids: &["scan.accept", "scan.reject", "scan.measured"] },
-    Section { tab: "SCAN TO SOLID", panel: "TRACE AND CHECK", promoted: 2, ids: &["scan.section", "scan.check"] },
+    Section { tab: "SCAN TO SOLID", panel: "TRACE AND CHECK", promoted: 4, ids: &["scan.section", "scan.panel", "scan.round", "scan.check"] },
     Section { tab: "SCAN TO SOLID", panel: "BODY", promoted: 2, ids: &["scan.build", "scan.print"] },
     Section { tab: "SCAN TO SOLID", panel: "LOAD", promoted: 3, ids: &["scan.load_test", "scan.animate", "scan.stronger"] },
     Section {
