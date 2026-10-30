@@ -33,6 +33,7 @@ pub const DOCUMENTED: &[&str] = &[
     "scan.repair",
     "scan.round",
     "scan.section",
+    "scan.stands",
     "scan.stronger",
     "solid.align",
     "solid.chamfer",

@@ -38,6 +38,7 @@ pub static COMMANDS: &[CommandSpec] = &[
     CommandSpec::new("scan.measured", "As Measured", action).at(TAB, PANEL_FEATURE).icon("revert").noundo().doc_only().params(PARAMS),
     CommandSpec::new("scan.section", "Section", action).at(TAB, PANEL_TRACE).icon("fit_section").noundo().doc_only().params(PARAMS),
     CommandSpec::new("scan.panel", "Panel", action).at(TAB, PANEL_TRACE).icon("extrude").noundo().doc_only().params(PARAMS),
+    CommandSpec::new("scan.stands", "Walls & Clips", action).at(TAB, PANEL_TRACE).icon("rib").noundo().doc_only().params(PARAMS),
     CommandSpec::new("scan.round", "Round", action).at(TAB, PANEL_TRACE).icon("fillet").noundo().doc_only().params(PARAMS),
     CommandSpec::new("scan.check", "Check", action).at(TAB, PANEL_TRACE).icon("compare").noundo().doc_only().params(PARAMS),
     CommandSpec::new("scan.build", "Build", action).at(TAB, PANEL_BODY).icon("update").noundo().doc_only().params(PARAMS),
