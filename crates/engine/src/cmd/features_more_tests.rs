@@ -1850,20 +1850,38 @@ fn fillet_a_slot_edge_that_runs_from_the_flat_onto_the_bend() {
     assert!(rel(before - after, removed) < 0.1, "removed {} vs about {removed}", before - after);
 }
 
-/// Where the Ramka's outline wall meets the outside of a bend: the edge's smooth chain runs on
-/// round the outline over ten edges, and the rolling ball's strip misses its sections there at
-/// every spacing. Refused once two spacings miss (it took 13 s, refining to 369 sections).
+/// The bottom edge of the Ramka's window on the outside of its bend: its smooth chain runs round
+/// the window over ten edges, on the flat and on the bend. The round corner of radius 1 on the
+/// bend is an intersection curve that folds back on itself by a hundredth of a millimetre, which
+/// zigzagged the rolling ball's spine there, and the strip missed its sections at every spacing
+/// (refused after 13 s). It is rounded now: R 1 takes off `(1 − π/4) r²` along the 674 of the
+/// chain where wall and bottom meet square, and `cot(α/2) − (π − α)/2` along the 187.5 where the
+/// window's side runs along the bend at its height of 7.573, the bottom sloping 31.9° there, so
+/// the two meet at α = 58.1°.
 #[test]
-fn fillet_where_an_outline_meets_the_outside_of_a_bend_is_refused_quickly() {
-    let s = ramka_panel();
-    let (took, made, _) = bend_fillet(&s, json!({"edges": [[-104.055, -91.464, 1.852]], "radius": 1, "body": "ramka panel"}), BEND_FILLET_LIMIT);
-    let e = made.expect_err("the round of the outline's edge on the bend");
-    assert!(e.to_string().contains("misses the ball's sections"), "after {took:?}: {e}");
+fn fillet_where_a_window_meets_the_outside_of_a_bend() {
+    let mut s = ramka_panel();
+    let before = run(&mut s, "inspect.measure", json!({}))["total"]["volume_mm3"].as_f64().unwrap();
+    let (took, made, mut s) = bend_fillet(&s, json!({"edges": [[-104.055, -91.464, 1.852]], "radius": 1, "body": "ramka panel"}), BEND_FILLET_LIMIT);
+    made.unwrap_or_else(|e| panic!("refused after {took:?}: {e}"));
+    {
+        let state = s.model.state();
+        let body = &state.body("ramka panel").unwrap().body;
+        assert!(body.validity().is_empty(), "{:?}", body.validity());
+        assert_eq!(body.shell_count(), 1);
+    }
+    let after = run(&mut s, "inspect.measure", json!({}))["total"]["volume_mm3"].as_f64().unwrap();
+    let (chain, along_bend) = (673.867, 187.5);
+    let slope = ((47.9 - 7.573) / 47.5_f64).acos();
+    let wedge = std::f64::consts::FRAC_PI_2 - slope;
+    let square = 1.0 - std::f64::consts::FRAC_PI_4;
+    let removed = square * (chain - along_bend) + (1.0 / (wedge / 2.0).tan() - (std::f64::consts::PI - wedge) / 2.0) * along_bend;
+    assert!(rel(before - after, removed) < 0.1, "removed {} vs about {removed}", before - after);
 }
 
-/// The Ramka's outer top edge, a line on the flat that runs onto a bend at each end, with the
-/// radius reduced to what fits (as Scan To Solid's Round asks): R 1 doesn't fit past its ends,
-/// and the search for the radius that does tries ten, healing the panel once for all of them.
+/// The Ramka's outer top edge with the radius reduced to what fits (as Scan To Solid's Round
+/// asks): R 1 doesn't reach the sheet's end, and the search for the radius that does
+/// tries ten, healing the panel once for all of them.
 #[test]
 fn fillet_reduced_on_an_edge_running_onto_bends_finishes() {
     let s = ramka_panel();

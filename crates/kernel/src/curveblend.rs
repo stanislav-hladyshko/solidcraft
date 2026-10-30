@@ -1650,12 +1650,17 @@ fn curve_blend_sized(solid: &Solid, ids: &[mt::EdgeID], size: f64, size_law: Siz
             Ok(((start.c - p0).dot(t0), (end.c - p1).dot(t1)))
         })
         .collect::<Result<_>>()?;
-    let section_at = |k: usize, edge: &mt::Edge, along: f64| -> Result<(Section, f64)> {
+    // The section at `along` of edge `k`, its tangent turned to run on the way `ahead` does: an
+    // intersection edge's curve can fold back on itself by a hair (a window's round corner on a
+    // bend, the Ramka panel 2026-10-30, ran back 0.01 mm), and its tangent there points back,
+    // which throws the anchor's offset to the wrong side of the edge point.
+    let section_at = |k: usize, edge: &mt::Edge, along: f64, ahead: Vec3| -> Result<(Section, Vec3)> {
         let (p, t) = tangent_at(edge, along).ok_or_else(|| KernelError::Failed("tangent".into()))?;
+        let t = if t.dot(ahead) < 0.0 { -t } else { t };
         let (start, end) = offsets.get(k).copied().ok_or_else(|| KernelError::Failed("section offset".into()))?;
         let anchor = p + t * (start * (1.0 - along) + end * along);
         let (a1, a2) = edge_sides(&[k]);
-        sizer.section(&a1, &a2, anchor, t, frac_at(k, along), sigma, cusp, None).ok_or_else(|| sizer.refusal())
+        sizer.section(&a1, &a2, anchor, t, frac_at(k, along), sigma, cusp, None).map(|(s, _)| (s, t)).ok_or_else(|| sizer.refusal())
     };
     let mut samples = SAMPLES.min(max_samples);
     // Whether the last spacing tried left a section the strip misses (see below).
@@ -1674,9 +1679,16 @@ fn curve_blend_sized(solid: &Solid, ids: &[mt::EdgeID], size: f64, size_law: Siz
             let mut list = vec![*vsec.get(k).ok_or_else(|| KernelError::Failed("section".into()))?];
             let mut law = vec![frac_at(k, 0.0)];
             let (mut front_beyond, mut back_beyond) = (0usize, 0usize);
+            let mut ahead = tangent_at(e, 0.0).ok_or_else(|| KernelError::Failed("tangent".into()))?.1;
             for j in 1..samples - 1 {
                 let along = j as f64 / (samples - 1) as f64;
-                let (section, _) = section_at(k, e, along)?;
+                let (section, t) = section_at(k, e, along, ahead)?;
+                ahead = t;
+                // A section where the edge folds back steps back along the spine: the guide is
+                // walked by the length along its centres, and a step back zigzags it.
+                if list.last().is_some_and(|last| (section.c - last.c).dot(t) <= 0.0) {
+                    continue;
+                }
                 list.push(section);
                 law.push(frac_at(k, along));
             }
