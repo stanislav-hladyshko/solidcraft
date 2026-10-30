@@ -1849,10 +1849,10 @@ pub fn fillet(body: &Body, edges: &[Vec3], radius: f64) -> Result<Body> {
     // A round that would run past its faces into other geometry or another round (#1080).
     // Checked once built, so a refusal of the build itself stands as it is.
     let size = crate::blend_fit::Size::Round(radius);
-    match fillet_built(body, edges, radius) {
+    crate::boolean_record::heal_once(|| match fillet_built(body, edges, radius) {
         Ok(b) => crate::blend_fit::accept(body, b, edges, size),
         Err(e) => Err(crate::blend_fit::explain(body, edges, size, e)),
-    }
+    })
 }
 
 /// [`fillet`], once the radius is known to fit.
@@ -1937,6 +1937,11 @@ pub fn fillet_max(body: &Body, edges: &[Vec3], radius: f64) -> Option<(f64, Body
     if !(radius.is_finite() && radius > 1e-6) {
         return None;
     }
+    crate::boolean_record::heal_once(|| fillet_max_healed_once(body, edges, radius))
+}
+
+/// [`fillet_max`], its body healed once for all the radii it tries.
+fn fillet_max_healed_once(body: &Body, edges: &[Vec3], radius: f64) -> Option<(f64, Body)> {
     let q = radius_step(radius);
     // Radii n·q for n in [0, hi): hi fails (it is the request, or above it), lo works.
     let mut hi = (radius / q).ceil() as u64;
@@ -1966,6 +1971,11 @@ pub fn fillet_max(body: &Body, edges: &[Vec3], radius: f64) -> Option<(f64, Body
 /// size, the groups don't build together, or there are too many to search (each search is up
 /// to 16 fillets, and this runs in the live preview).
 pub fn fillet_max_each(body: &Body, edges: &[Vec3], radius: f64) -> Option<(Vec<f64>, Body)> {
+    crate::boolean_record::heal_once(|| fillet_max_each_healed_once(body, edges, radius))
+}
+
+/// [`fillet_max_each`], its body healed once for all the fillets it tries.
+fn fillet_max_each_healed_once(body: &Body, edges: &[Vec3], radius: f64) -> Option<(Vec<f64>, Body)> {
     const MAX_GROUPS: usize = 8;
     const MAX_SEARCHES: usize = 2;
     let one = || fillet_max(body, edges, radius).map(|(r, b)| (vec![r; edges.len()], b));

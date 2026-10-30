@@ -402,6 +402,27 @@ fn a_refused_edge_is_not_rolled_again_after_blends_far_from_it() {
     assert!(fillet(&body, &ends, 3.0).is_ok());
 }
 
+/// A refused fillet tries the local blends, the corner build, the rolling ball and the fit check
+/// in turn, each starting from the body healed. It heals the body once for all of them, and a
+/// search for the radius that fits once for all its radii (each heal was 0.7 s on the Ramka
+/// panel, most of what a refusal took there, 2026-10-30).
+#[test]
+fn a_fillet_heals_its_body_once() {
+    let (r1, r2, d, h) = (17.0, 9.5, 12.0, 10.0);
+    let body = boolean(&cylinder(Vec3::ZERO, Vec3::Z, r1, h).unwrap(), &cylinder(Vec3::new(d, 0.0, 0.0), Vec3::Z, r2, h).unwrap(), BoolOp::Union)
+        .unwrap()
+        .unwrap();
+    let along = (r1 * r1 - r2 * r2 + d * d) / (2.0 * d);
+    let seam = Vec3::new(along, (r1 * r1 - along * along).sqrt(), h / 2.0);
+    let heals = || crate::boolean_record::HEALS.with(|n| n.replace(0));
+    heals();
+    assert!(matches!(fillet(&body, &[seam], 3.0), Err(KernelError::TooLarge(_))));
+    assert_eq!(heals(), 1, "healed per refused fillet");
+    let (r, _) = crate::blend::fillet_max(&body, &[seam], 3.0).unwrap();
+    assert!(r < 3.0);
+    assert_eq!(heals(), 1, "healed per search for the radius");
+}
+
 /// At a knife edge (the plane and the wall's normals opposite) the ball's centre is the same
 /// whichever face is side 1: `r` inside the plane and `r` outside the wall's cylinder.
 #[test]

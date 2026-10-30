@@ -202,8 +202,83 @@ pub(crate) fn heal_prism_result(body: &Body, size: f64, keep: &[Vec<Vec3>], coun
 /// `body` healed as the local modifiers take it (coplanar neighbours as one face, as after a
 /// join; faces split on purpose kept apart), with its history over `[body]`.
 pub(crate) fn healed(body: &Body) -> Result<Body> {
-    let counts = record::counts(&[body]);
-    heal_body(&operand(body, 0, &counts), body.deep_copy(), body.size(), body.split_keep(), &counts)
+    let heal = || {
+        #[cfg(test)]
+        HEALS.with(|n| n.set(n.get() + 1));
+        let counts = record::counts(&[body]);
+        heal_body(&operand(body, 0, &counts), body.deep_copy(), body.size(), body.split_keep(), &counts)
+    };
+    let known = HEALED.with(|m| m.borrow().as_ref().and_then(|list| list.iter().find(|(b, _)| same_input(b, body)).map(|(_, r)| r.clone())));
+    if let Some(r) = known {
+        return r;
+    }
+    let r = heal();
+    HEALED.with(|m| {
+        if let Some(list) = m.borrow_mut().as_mut() {
+            if list.len() >= HEALED_KEPT {
+                drop(list.remove(0));
+            }
+            list.push((body.clone(), r.clone()));
+        }
+    });
+    r
+}
+
+/// Bodies a [`heal_once`] scope keeps healed at most (the oldest goes first).
+const HEALED_KEPT: usize = 4;
+
+#[cfg(test)]
+thread_local! {
+    /// Bodies [`healed`] healed on this thread, not counting those a [`heal_once`] scope had
+    /// healed already (tests count them).
+    pub(crate) static HEALS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+thread_local! {
+    /// While a [`heal_once`] scope is open: the bodies [`healed`] took, and what it made of each.
+    static HEALED: std::cell::RefCell<Option<Vec<(Body, Result<Body>)>>> = const { std::cell::RefCell::new(None) };
+}
+
+/// Run `f` with [`healed`] healing each body once. A fillet heals its input in each way it tries
+/// (the local blends, the corner build, the rolling ball, the fit check) and a search for the
+/// radius that fits runs the fillet again for each radius: the same body each time, 0.7 s each on
+/// the Ramka panel (2026-10-30), most of what a refused fillet took there.
+pub(crate) fn heal_once<T>(f: impl FnOnce() -> T) -> T {
+    struct Close(bool);
+    impl Drop for Close {
+        fn drop(&mut self) {
+            if self.0 {
+                HEALED.with(|m| *m.borrow_mut() = None);
+            }
+        }
+    }
+    let opened = HEALED.with(|m| {
+        let mut m = m.borrow_mut();
+        if m.is_some() {
+            return false;
+        }
+        *m = Some(Vec::new());
+        true
+    });
+    let _close = Close(opened);
+    f()
+}
+
+/// Whether [`healed`] makes the same of `a` as of `b`: the same solid (shared, so unchanged:
+/// solids are never changed in place) carrying the same splits, face sources and protection.
+fn same_input(a: &Body, b: &Body) -> bool {
+    fn same<T>(x: &Option<std::sync::Arc<T>>, y: &Option<std::sync::Arc<T>>) -> bool {
+        match (x, y) {
+            (Some(x), Some(y)) => std::sync::Arc::ptr_eq(x, y),
+            (None, None) => true,
+            _ => false,
+        }
+    }
+    std::sync::Arc::ptr_eq(&a.solid, &b.solid)
+        && a.size.to_bits() == b.size.to_bits()
+        && same(&a.splits, &b.splits)
+        && same(&a.face_sources, &b.face_sources)
+        && a.regularization_protected == b.regularization_protected
 }
 
 /// `body` copied as it is, unhealed (`Body::deep_copy`, which keeps its face and edge order),
