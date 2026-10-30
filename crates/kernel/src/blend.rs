@@ -1214,11 +1214,19 @@ fn blend_in_order(body: &Body, edges: &[Vec3], r: f64, shape: Shape, what: &str,
     // Coplanar neighbours as one face (as after a join), so corners look as they should.
     let mut cur = crate::boolean_record::healed(body)?;
     // The last resort only for edges it treats otherwise: else it repeats the refusal.
+    // Nor for an edge whose chain runs on into curved edges: that chain is rolled either way.
     if curved_ends {
         let solid = cur.deep_copy();
         let ids = edge_ids(&cur, &solid, edges)?;
-        let other =
-            Body::unique_edges(&solid).iter().any(|e| ids.contains(&e.id()) && !curved_case(&solid, e, false) && curved_case(&solid, e, true));
+        let along = picked_chains(&cur, &solid, edges)?;
+        let near = near_chain(&cur);
+        let rolled = |e: &mt::Edge| {
+            let chain = smooth_chain_within(&solid, e, &|x| lies_on(x, &along, near));
+            runs_on(&solid, e, chain.as_deref(), r, cur.size(), shape)
+        };
+        let other = Body::unique_edges(&solid)
+            .iter()
+            .any(|e| ids.contains(&e.id()) && !curved_case(&solid, e, false) && curved_case(&solid, e, true) && !rolled(e));
         if !other {
             return Err(unsupported("no edge ending at a curved face"));
         }
@@ -1299,27 +1307,9 @@ fn blend_each(mut cur: Body, edges: &[Vec3], r: f64, shape: Shape, what: &str, c
     // A chain runs on along the edges smooth with a selected one in the body as given, not along
     // a round this blend has made meanwhile (which would take in edges nobody selected, or not,
     // by the order the edges come in).
-    let along: Vec<mt::Edge> = {
-        let solid = cur.deep_copy();
-        let all = Body::unique_edges(&solid);
-        let tol = (cur.size() * 2e-3).max(1e-3);
-        let mut list: Vec<mt::Edge> = Vec::new();
-        for p in edges {
-            if let Some((idx, _)) = cur.nearest_edge(*p, tol)?
-                && let Some(e) = all.get(idx)
-            {
-                let ids = smooth_chain(&solid, e).unwrap_or_else(|| vec![e.id()]);
-                for x in all.iter().filter(|x| ids.contains(&x.id())) {
-                    if !list.iter().any(|y| y.id() == x.id()) {
-                        list.push(x.clone());
-                    }
-                }
-            }
-        }
-        list
-    };
-    let near_chain = (cur.size() * 1e-6).max(1e-7);
-    let on_chains = |e: &mt::Edge| lies_on(e, &along, near_chain);
+    let along = picked_chains(&cur, &cur.deep_copy(), edges)?;
+    let near = near_chain(&cur);
+    let on_chains = |e: &mt::Edge| lies_on(e, &along, near);
     for _ in 0..(2 * edges.len() + 4) {
         if todo.is_empty() {
             return Ok(cur);
@@ -1387,21 +1377,9 @@ fn blend_each(mut cur: Body, edges: &[Vec3], r: f64, shape: Shape, what: &str, c
             // rolling ball would. A fillet doesn't run on into an earlier round's arc of its
             // radius: it ends in that round (as if both were rounded together).
             let chain = smooth_chain_within(&solid, &edge, &on_chains);
-            let into_round = |ids: &[mt::EdgeID]| {
-                Body::unique_edges(&solid).iter().any(|x| {
-                    ids.contains(&x.id())
-                        && x.id() != edge.id()
-                        && [edge.front(), edge.back()].iter().any(|v| x.front() == *v || x.back() == *v)
-                        && crate::curveblend::circle_of(x, size * 1e-6).is_some_and(|c| (c.1 - r).abs() <= r * 1e-4)
-                })
-            };
+            let into_round = |ids: &[mt::EdgeID]| into_round(&solid, &edge, ids, r, size);
             let own = edge.id();
-            let runs_on = !curved_case(&solid, &edge, false)
-                && chain.as_ref().is_some_and(|ids| {
-                    ids.len() > 1
-                        && Body::unique_edges(&solid).iter().any(|x| ids.contains(&x.id()) && !matches!(x.curve(), mt::Curve::Line(_)))
-                        && !(shape == Shape::Round && into_round(ids))
-                });
+            let runs_on = runs_on(&solid, &edge, chain.as_deref(), r, size, shape);
             let local = || guard(what, || blend_one(&solid, &edge, size, r, shape));
             let attempt = match chain.as_deref().filter(|_| runs_on).map(roll) {
                 Some(Ok(o)) => Ok(o),
@@ -1579,6 +1557,54 @@ fn run_on_loop(cur: &Body, solid: &Solid, pts: &[Vec3]) -> Result<Option<(Vec<mt
         }
     }
     Ok(best)
+}
+
+/// The edges the smooth chains of the picked edges run along in `solid` (`cur`'s), each once. A
+/// chain runs on along these only, not along a round the blend makes meanwhile (see [`blend_each`]).
+fn picked_chains(cur: &Body, solid: &Solid, edges: &[Vec3]) -> Result<Vec<mt::Edge>> {
+    let all = Body::unique_edges(solid);
+    let tol = (cur.size() * 2e-3).max(1e-3);
+    let mut list: Vec<mt::Edge> = Vec::new();
+    for p in edges {
+        if let Some((idx, _)) = cur.nearest_edge(*p, tol)?
+            && let Some(e) = all.get(idx)
+        {
+            let ids = smooth_chain(solid, e).unwrap_or_else(|| vec![e.id()]);
+            for x in all.iter().filter(|x| ids.contains(&x.id())) {
+                if !list.iter().any(|y| y.id() == x.id()) {
+                    list.push(x.clone());
+                }
+            }
+        }
+    }
+    Ok(list)
+}
+
+/// How near an edge lies to one of the picked chains to count as a piece of it.
+fn near_chain(cur: &Body) -> f64 {
+    (cur.size() * 1e-6).max(1e-7)
+}
+
+/// Whether the chain `ids` of `edge` runs, at the edge's ends, into an earlier round of radius `r`.
+fn into_round(solid: &Solid, edge: &mt::Edge, ids: &[mt::EdgeID], r: f64, size: f64) -> bool {
+    Body::unique_edges(solid).iter().any(|x| {
+        ids.contains(&x.id())
+            && x.id() != edge.id()
+            && [edge.front(), edge.back()].iter().any(|v| x.front() == *v || x.back() == *v)
+            && crate::curveblend::circle_of(x, size * 1e-6).is_some_and(|c| (c.1 - r).abs() <= r * 1e-4)
+    })
+}
+
+/// Whether a straight edge between planes is blended along its smooth `chain` (a flange into its
+/// bend, a side into a rounded corner) rather than alone: the chain runs on into curved edges,
+/// and a round doesn't run on into an earlier round of its radius.
+fn runs_on(solid: &Solid, edge: &mt::Edge, chain: Option<&[mt::EdgeID]>, r: f64, size: f64, shape: Shape) -> bool {
+    !curved_case(solid, edge, false)
+        && chain.is_some_and(|ids| {
+            ids.len() > 1
+                && Body::unique_edges(solid).iter().any(|x| ids.contains(&x.id()) && !matches!(x.curve(), mt::Curve::Line(_)))
+                && !(shape == Shape::Round && into_round(solid, edge, ids, r, size))
+        })
 }
 
 /// Is the edge curved, or does it lie between faces that aren't both planar (or, with
