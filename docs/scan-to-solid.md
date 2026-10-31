@@ -32,6 +32,9 @@ the scan-to-solid repository).
 3. OK runs `python -u scripts/solidcraft_run.py run <action> '<fields json>'` in the scan-to-solid
    folder, off the window thread, with the picks under `selection`, and closes the dialog. The
    script changes the open design through the control channel, which the window keeps serving.
+   One run at a time: while one goes on, OK of every dialog of the tab is greyed (Enter too), and
+   the footer says the run, how long it has taken and its latest `say`, as a feature's dialog says
+   "Computing… N s"; OK comes back when the run ends.
 4. Each line the script writes is JSON: `say` while it works, then `answer`, `refused` or `error`.
    They go to the status line and Messages. A run that ends without its last word says so, with
    the tail of its error output.
