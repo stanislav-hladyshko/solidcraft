@@ -31,7 +31,9 @@ the scan-to-solid repository).
    without a button). What is selected before becomes the inputs, as for any command.
 3. OK runs `python -u scripts/solidcraft_run.py run <action> '<fields json>'` in the scan-to-solid
    folder, off the window thread, with the picks under `selection`, and closes the dialog. The
-   script changes the open design through the control channel, which the window keeps serving.
+   script changes the open design through the control channel, which the window keeps serving;
+   the window gives it its own port in `SOLIDCRAFT_CONTROL_PORT`, since `current.port` names the
+   SolidCraft started last and goes when that one closes.
    One run at a time: while one goes on, OK of every dialog of the tab is greyed (Enter too), and
    the footer says the run, how long it has taken and its latest `say`, as a feature's dialog says
    "Computing… N s"; OK comes back when the run ends.
