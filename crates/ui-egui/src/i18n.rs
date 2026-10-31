@@ -447,12 +447,12 @@ mod tests {
     }
 
     /// Catalogs delivered complete. English is the source catalog; Arabic, Czech, Italian, Japanese and Chinese
-    /// are complete. German, Korean, Malay, Russian, French and Ukrainian
-    /// are partial (German and Korean predate the coverage guards; Russian, French and Ukrainian
-    /// are kept partial so a new label doesn't need more translations), so their gaps fall back
+    /// are complete, and in the scan-to-solid fork Ukrainian, its owner's language. German, Korean,
+    /// Malay, Russian and French are partial (German and Korean predate the coverage guards; Russian
+    /// and French are kept partial so a new label doesn't need more translations), so their gaps fall back
     /// to English and are reported by `cargo xtask i18n` without failing the build, while
     /// nothing in the complete catalogs may regress.
-    const COMPLETE: &[&str] = &["ar", "he", "ja", "vi", "zh"];
+    const COMPLETE: &[&str] = &["ar", "he", "ja", "uk", "vi", "zh"];
 
     /// `text()` falls back to English silently, so a message a complete locale never received is
     /// shown in English inside an otherwise translated UI, with nothing in the build to say so.
