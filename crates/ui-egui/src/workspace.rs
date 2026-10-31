@@ -99,17 +99,28 @@ pub const AGENT_ONLY: &[&str] = &["sketch.solve"];
 
 pub const SECTIONS: &[Section] = &[
     // scan-to-solid fork: our scan-to-solid actions, each opening its command dialog (scan_to_solid.rs).
-    Section { tab: "SCAN TO SOLID", panel: "SCAN", promoted: 3, ids: &["scan.lay_scan", "scan.recognise", "scan.intend"] },
+    // The panels are the process's stages left to right; the commands that need a part's build last.
+    Section { tab: "SCAN TO SOLID", panel: "PREPARE", promoted: 1, ids: &["scan.lay_scan"] },
+    Section { tab: "SCAN TO SOLID", panel: "RECOGNISE", promoted: 1, ids: &["scan.recognise"] },
     Section {
         tab: "SCAN TO SOLID",
-        panel: "PLACE ON SCAN",
+        panel: "MODEL",
         promoted: 4,
-        ids: &["scan.repair", "scan.feature", "scan.modify", "scan.ignore", "scan.keep"],
+        ids: &["scan.panel", "scan.stands", "scan.round", "scan.section", "scan.layers"],
     },
-    Section { tab: "SCAN TO SOLID", panel: "BODY FEATURE", promoted: 3, ids: &["scan.accept", "scan.reject", "scan.measured"] },
-    Section { tab: "SCAN TO SOLID", panel: "TRACE AND CHECK", promoted: 5, ids: &["scan.section", "scan.panel", "scan.stands", "scan.round", "scan.check"] },
-    Section { tab: "SCAN TO SOLID", panel: "BODY", promoted: 2, ids: &["scan.build", "scan.print"] },
-    Section { tab: "SCAN TO SOLID", panel: "LOAD", promoted: 3, ids: &["scan.load_test", "scan.animate", "scan.stronger"] },
+    Section {
+        tab: "SCAN TO SOLID",
+        panel: "REVIEW",
+        promoted: 4,
+        ids: &["scan.check", "scan.accept", "scan.reject", "scan.measured", "scan.feature"],
+    },
+    Section { tab: "SCAN TO SOLID", panel: "OUTPUT", promoted: 3, ids: &["scan.print", "scan.load_test", "scan.animate"] },
+    Section {
+        tab: "SCAN TO SOLID",
+        panel: "KNOWN PART",
+        promoted: 3,
+        ids: &["scan.intend", "scan.repair", "scan.modify", "scan.ignore", "scan.keep", "scan.build", "scan.remeasure", "scan.stronger"],
+    },
     Section {
         tab: "MODEL",
         panel: "SKETCH",
@@ -432,6 +443,7 @@ pub const RIBBON_LABELS: &[(&str, &str)] = &[
     ("plastic.manage_rules", "Plastic Rules"),
     ("pointcloud.insert", "Point Clouds"),
     ("render.scene", "Scene"),
+    ("scan.stands", "Walls & Clips"),
     ("sheet.export_bend_table", "Bend Table"),
     ("sheet.export_dxf", "Export DXF"),
     ("sheet.flat_pattern", "Flat Pattern"),
