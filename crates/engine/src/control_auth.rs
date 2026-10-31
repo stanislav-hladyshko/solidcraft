@@ -75,8 +75,18 @@ pub fn current_port_path() -> Option<PathBuf> {
     Some(control_dir()?.join("current.port"))
 }
 
+/// This app's own control port, once its channel listens (scan-to-solid fork).
+static OWN_PORT: std::sync::OnceLock<u16> = std::sync::OnceLock::new();
+
+/// The port this app's control channel listens on: what the scripts it starts talk to, since the
+/// discovery file names the latest app and goes when that one closes.
+pub fn own_port() -> Option<u16> {
+    OWN_PORT.get().copied()
+}
+
 /// Record `port` as the running app's, readable only by the user like the token files.
 pub fn write_current_port(port: u16) -> Result<PathBuf> {
+    let _ = OWN_PORT.set(port);
     let path = current_port_path().ok_or_else(|| Error::new(ErrorKind::NotFound, "no data folder"))?;
     write_token_file(&path, &port.to_string())?;
     Ok(path)

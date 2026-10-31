@@ -27,6 +27,8 @@ use crate::ui_kit;
 pub const DEFAULT_HOME: &str = r"C:\Repo\hardware\scan-to-solid";
 const HOME_VAR: &str = "SCAN_TO_SOLID_HOME";
 const RUNNER: &str = "scripts/solidcraft_run.py";
+/// The control port the scripts connect to (`solidcraft_actions.PORT_VAR`).
+const PORT_VAR: &str = "SOLIDCRAFT_CONTROL_PORT";
 /// The field the script reads the dialog's picks from (`solidcraft_run.py` `SELECTION`).
 const SELECTION: &str = "selection";
 /// Lines of a script's error output kept to show when it fails.
@@ -130,6 +132,10 @@ fn spawn(args: &[String], label: &str, ctx: &egui::Context) -> Result<Job, Strin
     }
     let mut command = Command::new(&python);
     command.arg("-u").arg(RUNNER).args(args).current_dir(&home).env("PYTHONIOENCODING", "utf-8");
+    // The scripts drive this window, not whichever SolidCraft started last (current.port).
+    if let Some(port) = solidcraft_engine::control_auth::own_port() {
+        command.env(PORT_VAR, port.to_string());
+    }
     command.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
     #[cfg(windows)]
     {
