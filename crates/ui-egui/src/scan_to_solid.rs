@@ -26,6 +26,8 @@ use crate::ui_kit;
 /// Where the scan-to-solid folder is when `SCAN_TO_SOLID_HOME` does not say.
 pub const DEFAULT_HOME: &str = r"C:\Repo\hardware\scan-to-solid";
 const HOME_VAR: &str = "SCAN_TO_SOLID_HOME";
+/// The interface language (`uk`, `en`, ...) the script names the tab's buttons in, in what it says.
+const LANGUAGE_VAR: &str = "SOLIDCRAFT_LANGUAGE";
 const RUNNER: &str = "scripts/solidcraft_run.py";
 /// The control port the scripts connect to (`solidcraft_actions.PORT_VAR`).
 const PORT_VAR: &str = "SOLIDCRAFT_CONTROL_PORT";
@@ -125,13 +127,10 @@ fn spawn(args: &[String], label: &str, ctx: &egui::Context) -> Result<Job, Strin
     let home = home();
     let python = python(&home);
     if !python.is_file() || !home.join(RUNNER).is_file() {
-        return Err(format!(
-            "Scan To Solid needs the scan-to-solid folder with its .venv, not found at {}. Set {HOME_VAR} to where it is.",
-            home.display()
-        ));
+        return Err(crate::i18n::format("scan_to_solid.no_home", &[("path", &home.display().to_string()), ("variable", HOME_VAR)]));
     }
     let mut command = Command::new(&python);
-    command.arg("-u").arg(RUNNER).args(args).current_dir(&home).env("PYTHONIOENCODING", "utf-8");
+    command.arg("-u").arg(RUNNER).args(args).current_dir(&home).env("PYTHONIOENCODING", "utf-8").env(LANGUAGE_VAR, crate::i18n::language());
     // The scripts drive this window, not whichever SolidCraft started last (current.port).
     if let Some(port) = solidcraft_engine::control_auth::own_port() {
         command.env(PORT_VAR, port.to_string());
@@ -142,7 +141,9 @@ fn spawn(args: &[String], label: &str, ctx: &egui::Context) -> Result<Job, Strin
         use std::os::windows::process::CommandExt;
         command.creation_flags(CREATE_NO_WINDOW);
     }
-    let mut child = command.spawn().map_err(|e| format!("Could not start {}: {e}", python.display()))?;
+    let mut child = command
+        .spawn()
+        .map_err(|e| crate::i18n::format("scan_to_solid.cannot_start", &[("path", &python.display().to_string()), ("error", &e.to_string())]))?;
     let (tx, rx) = channel();
     if let Some(out) = child.stdout.take() {
         read_lines(out, tx.clone(), Line::Out, ctx.clone());
@@ -181,7 +182,7 @@ fn said(line: &str) -> Option<Said> {
     }
     for key in ["answer", "refused", "error"] {
         if let Some(text) = value.get(key).and_then(Value::as_str) {
-            let text = if key == "error" { format!("Error: {text}") } else { text.to_owned() };
+            let text = if key == "error" { crate::i18n::format("scan_to_solid.error", &[("text", text)]) } else { text.to_owned() };
             return Some(Said { text, last: true, failed: key != "answer" });
         }
     }
@@ -249,9 +250,9 @@ fn kept(label: &str) -> &'static str {
     kept.entry(label.to_owned()).or_insert_with(|| Box::leak(label.to_owned().into_boxed_str()))
 }
 
-/// The row label of a field: its label, with its unit.
+/// The row label of a field: its label, translated, with its unit.
 fn row_label(control: &Value) -> String {
-    let label = control["label"].as_str().filter(|l| !l.is_empty()).or_else(|| control["name"].as_str()).unwrap_or_default();
+    let label = crate::i18n::tr_label(control["label"].as_str().filter(|l| !l.is_empty()).or_else(|| control["name"].as_str()).unwrap_or_default());
     match control["unit"].as_str().filter(|u| !u.is_empty()) {
         Some(unit) => format!("{label} ({unit})"),
         None => label.to_owned(),
@@ -280,7 +281,7 @@ impl ScanToSolid {
         self.spec
             .as_ref()
             .and_then(|spec| action_spec(spec, action))
-            .and_then(|(button, _)| button["label"].as_str().map(str::to_owned))
+            .and_then(|(button, _)| button["label"].as_str().map(|label| crate::i18n::tr_label(label).to_owned()))
             .unwrap_or_else(|| action.to_owned())
     }
 
@@ -349,7 +350,7 @@ impl ScanToSolid {
             if done {
                 self.describing = None;
                 if self.spec.is_none() {
-                    self.unavailable = Some(format!("Could not read the Scan To Solid actions: {}", self.stderr.join("\n")));
+                    self.unavailable = Some(crate::i18n::format("scan_to_solid.unreadable", &[("why", &self.stderr.join("\n"))]));
                 }
             }
         }
@@ -379,9 +380,14 @@ impl ScanToSolid {
             // a run that ended without its last word crashed before it could say why; a watch ends
             // only when turned off, which drops it before this, so its end is always said
             if done && (watch || !answered) {
-                let what = if watch { "stopped" } else { "stopped without an answer" };
                 let why = self.stderr.join("\n");
-                status_lines.push((if why.is_empty() { format!("{label} {what}") } else { format!("{label} {what}: {why}") }, true));
+                let message = match (watch, why.is_empty()) {
+                    (true, true) => "scan_to_solid.stopped",
+                    (true, false) => "scan_to_solid.stopped_because",
+                    (false, true) => "scan_to_solid.stopped_unanswered",
+                    (false, false) => "scan_to_solid.stopped_unanswered_because",
+                };
+                status_lines.push((crate::i18n::format(message, &[("label", &label), ("why", &why)]), true));
             }
         }
         status_lines
@@ -407,7 +413,7 @@ impl ScanToSolid {
         }
         self.watching = None;
         let Some(action) = action else { return Ok(()) };
-        let label = format!("Live {}", self.label_of(action));
+        let label = crate::i18n::format("scan_to_solid.live", &[("label", &self.label_of(action))]);
         self.watching = Some(spawn(&["watch".to_owned(), action.to_owned(), Value::Object(fields.clone()).to_string()], &label, ctx)?);
         Ok(())
     }
@@ -438,7 +444,7 @@ pub fn waits(app: &mut SolveApp, id: &str) -> bool {
         Some(why) => app.set_status(why, true),
         None => {
             app.scan_to_solid.pending = Some(id.to_owned());
-            app.set_status("Scan To Solid is reading its actions…", false);
+            app.set_status(crate::i18n::tr("scan_to_solid.reading"), false);
         }
     }
     true
@@ -501,13 +507,13 @@ pub fn run(app: &mut SolveApp, d: &Dialog) -> Result<(), String> {
     let panel = &mut app.scan_to_solid;
     let label = panel.label_of(action);
     if let Some(job) = &panel.running {
-        return Err(format!("{} is still running: OK waits until it ends", job.label));
+        return Err(crate::i18n::format("scan_to_solid.still_running", &[("label", &job.label)]));
     }
     let mut fields = panel.values(action);
     let picks: Vec<&solidcraft_engine::Sel> = d.inputs.iter().flat_map(|input| input.items.iter()).collect();
     fields.insert(SELECTION.to_owned(), json!(picks));
     panel.stderr.clear();
-    let ctx = panel.ctx.clone().ok_or("Scan To Solid is not ready yet: press OK again")?;
+    let ctx = panel.ctx.clone().ok_or(crate::i18n::tr("scan_to_solid.not_ready"))?;
     match panel.watch_change(action) {
         Some(true) => panel.set_watch(Some(action), &fields, &ctx)?,
         change => {
@@ -542,6 +548,33 @@ mod tests {
         assert!(panel.values("nothing").is_empty());
         assert_eq!(panel.label_of("load_test"), "Load Test");
         assert_eq!(panel.label_of("nothing"), "nothing");
+    }
+
+    #[test]
+    fn scan_to_solid_speaks_the_interface_language() {
+        let panel = described();
+        let _ukrainian = crate::i18n::scope("uk");
+        assert_eq!(panel.label_of("load_test"), "На міцність");
+        let spec = panel.spec.as_ref().expect("described");
+        let (_, fields) = action_spec(spec, "load_test").expect("Load Test is on the panel");
+        assert_eq!(fields.into_iter().map(row_label).collect::<Vec<_>>(), ["Сила (N)", "Тягнути"]);
+        assert_eq!(said(r#"{"error": "boom"}"#).map(|line| line.text).as_deref(), Some("Помилка: boom"));
+    }
+
+    /// The ribbon finds a label's translation by its English text, so a label another message has
+    /// in English shows that message's translation: "Round" showed a relief shape's.
+    #[test]
+    fn scan_to_solid_commands_show_their_own_ukrainian_labels() {
+        let _ukrainian = crate::i18n::scope("uk");
+        let commands: Vec<_> =
+            solidcraft_engine::command_specs().into_iter().filter(|c| solidcraft_engine::scan_to_solid_action(c.id).is_some()).collect();
+        assert!(commands.len() > 20, "the tab's commands are found");
+        for command in commands {
+            let id = format!("cmd.{}", command.id);
+            let own = crate::i18n::tr(&id);
+            assert_ne!(own, command.label, "{} has no Ukrainian label", command.id);
+            assert_eq!(crate::i18n::tr_label(command.label), own, "{}", command.id);
+        }
     }
 
     #[test]

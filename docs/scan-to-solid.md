@@ -47,6 +47,15 @@ the scan-to-solid repository).
 The scan-to-solid folder is `SCAN_TO_SOLID_HOME`, else `C:\Repo\hardware\scan-to-solid`, with its
 Python in `.venv`. Without it the window says where it looked.
 
+The tab speaks the interface language (Preferences › General › Interface language). Its buttons,
+fields, tooltips and status lines are in the catalog, in English and Ukrainian
+(`assets/locales/pending/scan-to-solid.json`, `scan-to-solid-ukrainian.json`); the script
+describes its panel in English, and the dialog translates each label as it draws it. Each run gets
+the language in `SOLIDCRAFT_LANGUAGE`, so the buttons its answers name are the ones on the ribbon.
+The labels are looked up by their English text, so a button's English label must not be one
+another message already has: `scan.round` is Round Edges, as Round is a relief shape
+(`scan_to_solid_commands_show_their_own_ukrainian_labels`).
+
 ## Build
 
 On Windows with Rust (MSVC) and the Visual Studio C++ tools:
