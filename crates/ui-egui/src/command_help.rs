@@ -16,6 +16,7 @@ pub const DOCUMENTED: &[&str] = &[
     "pointcloud.insert",
     "scan.accept",
     "scan.animate",
+    "scan.auto",
     "scan.build",
     "scan.check",
     "scan.feature",

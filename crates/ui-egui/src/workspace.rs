@@ -100,7 +100,7 @@ pub const AGENT_ONLY: &[&str] = &["sketch.solve"];
 pub const SECTIONS: &[Section] = &[
     // scan-to-solid fork: our scan-to-solid actions, each opening its command dialog (scan_to_solid.rs).
     // The panels are the process's stages left to right; the commands that need a part's build last.
-    Section { tab: "SCAN TO SOLID", panel: "PREPARE", promoted: 1, ids: &["scan.lay_scan"] },
+    Section { tab: "SCAN TO SOLID", panel: "PREPARE", promoted: 2, ids: &["scan.auto", "scan.lay_scan"] },
     Section { tab: "SCAN TO SOLID", panel: "RECOGNISE", promoted: 1, ids: &["scan.recognise"] },
     Section {
         tab: "SCAN TO SOLID",

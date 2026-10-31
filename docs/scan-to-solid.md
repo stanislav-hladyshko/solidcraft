@@ -8,7 +8,7 @@ ADR 0018 there). Everything else is upstream SolidCraft.
 
 | Where | What |
 |---|---|
-| `crates/engine/src/cmd/scan_to_solid.rs` | 23 commands `scan.<action>` on the tab `SCAN TO SOLID`, in six panels that are the process's stages left to right (ADR 0027 of the scan-to-solid repository): Prepare, Recognise, Model, Review, Output, and Known Part for the commands that need a part's build script. The engine only names the action; `action_of` maps an id to it. |
+| `crates/engine/src/cmd/scan_to_solid.rs` | 24 commands `scan.<action>` on the tab `SCAN TO SOLID`, in six panels that are the process's stages left to right (ADR 0027 of the scan-to-solid repository): Prepare, Recognise, Model, Review, Output, and Known Part for the commands that need a part's build script. The engine only names the action; `action_of` maps an id to it. |
 | `crates/ui-egui/src/workspace.rs` | the tab in `TABS`, its six sections in `SECTIONS`. |
 | `crates/ui-egui/src/scan_to_solid.rs` | the tab's actions as command dialogs: their picks and fields, the scripts they run, what those say on the status line. |
 | `crates/ui-egui/src/dialogs.rs`, `dialogs_dense.rs` | `Kind::Scan`: a tab button's command dialog, opened by `Dialog::for_command` like any other; its OK runs the script. |

@@ -1,5 +1,7 @@
 {
   "en": {
+    "cmd.scan.auto": "Auto",
+    "help.scan.auto": "Builds a new part's body from its scan in one run: Lay Scan unless the scan already lies, then Panel, Walls & Clips and Check. Round and the decisions on pieces are left to you; a step that refuses stops the run and says which.",
     "cmd.scan.lay_scan": "Lay Scan",
     "help.scan.lay_scan": "Lays the scan on a flat face of its hull and shows the candidate faces. Use it first, so measuring starts from the face the part stands on.",
     "cmd.scan.recognise": "Recognise",
@@ -56,6 +58,8 @@
     "ui.scan_to_solid_title": "Scan To Solid"
   },
   "ar": {
+    "cmd.scan.auto": "Auto",
+    "help.scan.auto": "Builds a new part's body from its scan in one run: Lay Scan unless the scan already lies, then Panel, Walls & Clips and Check. Round and the decisions on pieces are left to you; a step that refuses stops the run and says which.",
     "cmd.scan.lay_scan": "Lay Scan",
     "help.scan.lay_scan": "Lays the scan on a flat face of its hull and shows the candidate faces. Use it first, so measuring starts from the face the part stands on.",
     "cmd.scan.recognise": "Recognise",
@@ -112,6 +116,8 @@
     "ui.scan_to_solid_title": "Scan To Solid"
   },
   "he": {
+    "cmd.scan.auto": "Auto",
+    "help.scan.auto": "Builds a new part's body from its scan in one run: Lay Scan unless the scan already lies, then Panel, Walls & Clips and Check. Round and the decisions on pieces are left to you; a step that refuses stops the run and says which.",
     "cmd.scan.lay_scan": "Lay Scan",
     "help.scan.lay_scan": "Lays the scan on a flat face of its hull and shows the candidate faces. Use it first, so measuring starts from the face the part stands on.",
     "cmd.scan.recognise": "Recognise",
@@ -168,6 +174,8 @@
     "ui.scan_to_solid_title": "Scan To Solid"
   },
   "ja": {
+    "cmd.scan.auto": "Auto",
+    "help.scan.auto": "Builds a new part's body from its scan in one run: Lay Scan unless the scan already lies, then Panel, Walls & Clips and Check. Round and the decisions on pieces are left to you; a step that refuses stops the run and says which.",
     "cmd.scan.lay_scan": "Lay Scan",
     "help.scan.lay_scan": "Lays the scan on a flat face of its hull and shows the candidate faces. Use it first, so measuring starts from the face the part stands on.",
     "cmd.scan.recognise": "Recognise",
@@ -224,6 +232,8 @@
     "ui.scan_to_solid_title": "Scan To Solid"
   },
   "vi": {
+    "cmd.scan.auto": "Auto",
+    "help.scan.auto": "Builds a new part's body from its scan in one run: Lay Scan unless the scan already lies, then Panel, Walls & Clips and Check. Round and the decisions on pieces are left to you; a step that refuses stops the run and says which.",
     "cmd.scan.lay_scan": "Lay Scan",
     "help.scan.lay_scan": "Lays the scan on a flat face of its hull and shows the candidate faces. Use it first, so measuring starts from the face the part stands on.",
     "cmd.scan.recognise": "Recognise",
@@ -280,6 +290,8 @@
     "ui.scan_to_solid_title": "Scan To Solid"
   },
   "zh": {
+    "cmd.scan.auto": "Auto",
+    "help.scan.auto": "Builds a new part's body from its scan in one run: Lay Scan unless the scan already lies, then Panel, Walls & Clips and Check. Round and the decisions on pieces are left to you; a step that refuses stops the run and says which.",
     "cmd.scan.lay_scan": "Lay Scan",
     "help.scan.lay_scan": "Lays the scan on a flat face of its hull and shows the candidate faces. Use it first, so measuring starts from the face the part stands on.",
     "cmd.scan.recognise": "Recognise",

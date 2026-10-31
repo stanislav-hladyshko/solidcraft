@@ -26,6 +26,7 @@ pub const PREFIX: &str = "scan.";
 const PARAMS: &str = "no parameters → action; the command dialog runs the action with its fields and picks";
 
 pub static COMMANDS: &[CommandSpec] = &[
+    CommandSpec::new("scan.auto", "Auto", action).at(TAB, PANEL_PREPARE).icon("timeline_play").noundo().doc_only().params(PARAMS),
     CommandSpec::new("scan.lay_scan", "Lay Scan", action).at(TAB, PANEL_PREPARE).icon("ground").noundo().doc_only().params(PARAMS),
     CommandSpec::new("scan.recognise", "Recognise", action).at(TAB, PANEL_RECOGNISE).icon("inspect").noundo().doc_only().params(PARAMS),
     CommandSpec::new("scan.panel", "Panel", action).at(TAB, PANEL_MODEL).icon("extrude").noundo().doc_only().params(PARAMS),
