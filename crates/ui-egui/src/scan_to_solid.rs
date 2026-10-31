@@ -50,6 +50,10 @@ struct Job {
     /// The latest thing it said, in this frame or an earlier one, was a last word (`answer`,
     /// `refused` or `error`).
     answered: bool,
+    /// When it started ([`crate::now_ms`]), and the latest thing it said while working: what a
+    /// dialog of the tab shows while it waits for it.
+    started_ms: f64,
+    latest: Option<String>,
 }
 
 impl Job {
@@ -140,7 +144,7 @@ fn spawn(args: &[String], label: &str, ctx: &egui::Context) -> Result<Job, Strin
     if let Some(err) = child.stderr.take() {
         read_lines(err, tx, Line::Err, ctx.clone());
     }
-    Ok(Job { child, lines: rx, label: label.to_owned(), answered: false })
+    Ok(Job { child, lines: rx, label: label.to_owned(), answered: false, started_ms: crate::now_ms(), latest: None })
 }
 
 fn read_lines<R: std::io::Read + Send + 'static>(stream: R, tx: Sender<Line>, wrap: fn(String) -> Line, ctx: egui::Context) {
@@ -355,6 +359,9 @@ impl ScanToSolid {
             if let Some(line) = lines.last() {
                 job.answered = line.last;
             }
+            if let Some(line) = lines.iter().rev().find(|line| !line.last) {
+                job.latest = Some(line.text.clone());
+            }
             let answered = job.answered;
             if done {
                 *slot = None;
@@ -372,6 +379,19 @@ impl ScanToSolid {
             }
         }
         status_lines
+    }
+
+    /// The run going on, as a dialog's footer says it while OK waits: its label, how long it has
+    /// taken and the latest thing it said ("Recognise 6:12 · Ділю скан на поверхні: покрито 35 %").
+    fn running_status(&self, now_ms: f64) -> Option<String> {
+        let job = self.running.as_ref()?;
+        let seconds = ((now_ms - job.started_ms) / 1000.0).floor().max(0.0);
+        let minutes = (seconds / 60.0).floor();
+        let took = format!("{} {minutes:.0}:{:02.0}", job.label, seconds - minutes * 60.0);
+        Some(match &job.latest {
+            Some(latest) => format!("{took} · {latest}"),
+            None => took,
+        })
     }
 
     /// Turn `action`'s watch on (the action again after every design change) or off.
@@ -438,6 +458,12 @@ pub fn poll(app: &mut SolveApp, ctx: &egui::Context) {
     }
 }
 
+/// While a run goes on: what the tab's dialogs say in their footer, OK greyed until it ends (one
+/// run at a time: the scripts change the open design).
+pub fn running(app: &SolveApp) -> Option<String> {
+    app.scan_to_solid.running_status(crate::now_ms())
+}
+
 /// The dialog's fields; true when Enter was pressed in one.
 pub fn rows(ui: &mut egui::Ui, panel: &mut ScanToSolid, action: &str) -> bool {
     let mut enter = false;
@@ -469,7 +495,7 @@ pub fn run(app: &mut SolveApp, d: &Dialog) -> Result<(), String> {
     let panel = &mut app.scan_to_solid;
     let label = panel.label_of(action);
     if let Some(job) = &panel.running {
-        return Err(format!("{} is still running: press OK again when it answers", job.label));
+        return Err(format!("{} is still running: OK waits until it ends", job.label));
     }
     let mut fields = panel.values(action);
     let picks: Vec<&solidcraft_engine::Sel> = d.inputs.iter().flat_map(|input| input.items.iter()).collect();
@@ -561,26 +587,88 @@ mod tests {
 
     /// A job whose script writes `{"answer": "Built"}` and exits, after about a second when `lingers`.
     fn answering_job(lingers: bool) -> Job {
+        shell_job(&[r#"{"answer": "Built"}"#], if lingers { 1 } else { 0 }, &[])
+    }
+
+    /// A job that writes `before`, works about `seconds`, then writes `after` and exits.
+    fn shell_job(before: &[&str], seconds: u32, after: &[&str]) -> Job {
         #[cfg(windows)]
         let mut command = {
             use std::os::windows::process::CommandExt;
+            let echo = |line: &&str| format!("echo {line}");
+            let mut script: Vec<String> = before.iter().map(echo).collect();
+            if seconds > 0 {
+                script.push(format!("ping -n {} 127.0.0.1 >nul", seconds + 1));
+            }
+            script.extend(after.iter().map(echo));
             let mut command = Command::new("cmd");
-            let wait = if lingers { " & ping -n 2 127.0.0.1 >nul" } else { "" };
-            command.raw_arg(format!("/C echo {{\"answer\": \"Built\"}}{wait}"));
+            command.raw_arg(format!("/C {}", script.join(" & ")));
             command
         };
         #[cfg(not(windows))]
         let mut command = {
+            let echo = |line: &&str| format!("echo '{line}'");
+            let mut script: Vec<String> = before.iter().map(echo).collect();
+            if seconds > 0 {
+                script.push(format!("sleep {seconds}"));
+            }
+            script.extend(after.iter().map(echo));
             let mut command = Command::new("sh");
-            let wait = if lingers { "; sleep 1" } else { "" };
-            command.args(["-c", &format!("echo '{{\"answer\": \"Built\"}}'{wait}")]);
+            command.args(["-c", &script.join("; ")]);
             command
         };
         let mut child = command.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().expect("a shell starts");
         let (tx, rx) = channel();
         read_lines(child.stdout.take().expect("piped"), tx.clone(), Line::Out, egui::Context::default());
         read_lines(child.stderr.take().expect("piped"), tx, Line::Err, egui::Context::default());
-        Job { child, lines: rx, label: "Build".into(), answered: false }
+        Job { child, lines: rx, label: "Build".into(), answered: false, started_ms: crate::now_ms(), latest: None }
+    }
+
+    /// While a run goes on, a dialog of the tab says which, how long it has taken and its latest
+    /// word, its OK greyed, and Enter does not run it either; once the run ends, OK is back (OK used
+    /// to stay live and say "still running" only once pressed, with nothing to say how far the run
+    /// had got).
+    #[test]
+    fn scan_to_solid_ok_waits_for_the_run_going_on_and_says_how_far_it_got() {
+        let mut h = crate::scenario::Harness::new();
+        h.app.scan_to_solid.described(DESCRIBED);
+        h.app.scan_to_solid.running = Some(shell_job(&[r#"{"say": "Half way"}"#], 2, &[r#"{"answer": "Built"}"#]));
+        h.app.start("scan.check");
+        for _ in 0..100 {
+            h.frames(1);
+            if running(&h.app).is_some_and(|status| status.ends_with(" · Half way")) {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        let status = running(&h.app).expect("the run goes on");
+        assert!(status.starts_with("Build 0:0") && status.ends_with(" · Half way"), "{status}");
+        assert!(!h.app.viewport.corner_ok, "OK waits for the run");
+        h.call("ui.key", json!({"key": "Enter"}));
+        h.frames(2);
+        let dialog = h.app.dialog.as_ref().expect("Enter leaves the dialog open");
+        assert_eq!(dialog.error, None, "Enter did not try to run the action");
+        for _ in 0..300 {
+            h.frames(1);
+            if h.app.scan_to_solid.running.is_none() {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        h.frames(2);
+        assert!(running(&h.app).is_none(), "the run ended");
+        assert!(h.app.dialog.is_some(), "the dialog waited open");
+        assert!(h.app.viewport.corner_ok, "OK is back once the run ends");
+    }
+
+    #[test]
+    fn scan_to_solid_running_status_reads_minutes_and_seconds() {
+        let mut job = shell_job(&[], 0, &[]);
+        job.started_ms = 1_000.0;
+        job.latest = Some("Ділю скан на поверхні: покрито 35 %".into());
+        let panel = ScanToSolid { running: Some(job), ..Default::default() };
+        assert_eq!(panel.running_status(1_000.0 + 372_900.0).as_deref(), Some("Build 6:12 · Ділю скан на поверхні: покрито 35 %"));
+        assert_eq!(ScanToSolid::default().running_status(0.0), None);
     }
 
     /// A script that wrote its last word and exited at once: the word is read, then the job is done

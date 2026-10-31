@@ -2955,12 +2955,17 @@ pub fn show(app: &mut SolveApp, ctx: &egui::Context) {
     let frame = crate::ui_kit::Panel::feature_frame(ctx, app.ui.layout, side);
     // OK is offered once the inputs make a feature.
     let has_ok = !matches!(d.kind, Kind::Sketch | Kind::Measure { .. });
+    // A Scan To Solid run still going: the tab's OK waits for it, its footer saying how far it got.
+    #[cfg(not(target_arch = "wasm32"))]
+    let scan_running = if matches!(d.kind, Kind::Scan { .. }) { crate::scan_to_solid::running(app) } else { None };
+    #[cfg(target_arch = "wasm32")]
+    let scan_running: Option<String> = None;
     let valid = match &d.kind {
         Kind::Sketch => false,
         // Nothing picked is an answer too: OK empties the chat's tray.
         Kind::ChatContext => true,
         // the script says what is missing (a refusal), as the tab's buttons always have
-        Kind::Scan { .. } => true,
+        Kind::Scan { .. } => scan_running.is_none(),
         Kind::Material { editor, .. } => !editor.editing() && apply_commands(app, &d).is_ok(),
         Kind::SaveMesh(_) => crate::dialogs_save_mesh::ready(&d.inputs),
         Kind::SketchModify(crate::sketch_modify_ui::Mod::Corner { .. }) => {
@@ -3042,7 +3047,9 @@ pub fn show(app: &mut SolveApp, ctx: &egui::Context) {
                     let seconds = ((crate::now_ms() - job.started) / 1000.0).floor().max(0.0);
                     crate::i18n::format("dialog.computing", &[("seconds", &format!("{seconds:.0}"))])
                 });
-                crate::ui_kit::ComputeStatus { text, busy: app.applying.is_some() || app.preview.busy, applying: app.applying.is_some() }
+                let text = text.or_else(|| scan_running.clone());
+                let busy = app.applying.is_some() || app.preview.busy || scan_running.is_some();
+                crate::ui_kit::ComputeStatus { text, busy, applying: app.applying.is_some() }
             };
             let (closed, action) = if manager {
                 panel.feature_collapsible(ui, heading, applying, valid, &mut collapsed, body)
@@ -3129,7 +3136,13 @@ pub fn show(app: &mut SolveApp, ctx: &egui::Context) {
         && !matches!(&d.kind, Kind::Motion(k) if k.wide())
         && !matches!(&d.kind, Kind::Material { editor, .. } if editor.editing());
     let report_active = app.issue_report.draft.is_some();
-    if !preset_prompt && !report_active && enter_applies && app.applying.is_none() && (enter || canvas_enter || (enter_free && nothing_focused)) {
+    if !preset_prompt
+        && !report_active
+        && enter_applies
+        && app.applying.is_none()
+        && scan_running.is_none()
+        && (enter || canvas_enter || (enter_free && nothing_focused))
+    {
         ok = true;
     }
     if !preset_prompt && !report_active && esc && !app.esc_handled {
