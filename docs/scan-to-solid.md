@@ -15,7 +15,8 @@ ADR 0018 there). Everything else is SolidCraft v0.26.1 as it was forked.
 | `crates/ui-egui/src/lib.rs` | `SolveApp::scan_to_solid`; `start` waits for the actions once, `poll` each frame. |
 | `apps/solidcraft/src/main.rs` | the scripts stop when the app closes. |
 | `crates/ui-egui/src/file_load.rs`, `lib.rs` | Insert Mesh puts a PLY in as a mesh (`file.insert_mesh`), as its name says. SolidCraft v0.26.1 decided by the extension and made a PLY a point cloud, which Section cannot cut; Creality writes its scans as `Mesh.ply`. |
-| `crates/ui-egui/src/command_help.rs`, `assets/locales/pending/scan-to-solid.json` | the tab's names, the button labels and their help. English only: the other complete catalogs (ar, he, ja, vi, zh) carry the English text until the app is translated as a whole. |
+| `crates/ui-egui/src/command_help.rs`, `assets/locales/pending/scan-to-solid.json`, `scan-to-solid-ukrainian.json` | the tab's names, the button labels, their help, the dialogs' fields and the status lines, in English and Ukrainian. The other complete catalogs (ar, he, ja, vi, zh) carry the English text. |
+| `assets/locales/pending/ukrainian-gaps.json`, `crates/ui-egui/src/i18n.rs` | the rest of SolidCraft in Ukrainian: the messages v0.26.1's `uk.json` lacked, and `uk` in `COMPLETE`, so an English message without Ukrainian fails the tests. |
 | `.github/workflows/scan-to-solid.yml` | a Windows x64 build of this branch (unsigned), with the tab's tests. |
 
 ## How a button works
@@ -47,14 +48,16 @@ the scan-to-solid repository).
 The scan-to-solid folder is `SCAN_TO_SOLID_HOME`, else `C:\Repo\hardware\scan-to-solid`, with its
 Python in `.venv`. Without it the window says where it looked.
 
-The tab speaks the interface language (Preferences › General › Interface language). Its buttons,
+The tab speaks the interface language (Preferences › General › Language › Interface language). Its buttons,
 fields, tooltips and status lines are in the catalog, in English and Ukrainian
 (`assets/locales/pending/scan-to-solid.json`, `scan-to-solid-ukrainian.json`); the script
 describes its panel in English, and the dialog translates each label as it draws it. Each run gets
 the language in `SOLIDCRAFT_LANGUAGE`, so the buttons its answers name are the ones on the ribbon.
 The labels are looked up by their English text, so a button's English label must not be one
 another message already has: `scan.round` is Round Edges, as Round is a relief shape
-(`scan_to_solid_commands_show_their_own_ukrainian_labels`).
+(`scan_to_solid_commands_show_their_own_ukrainian_labels`). A new button gets its Ukrainian label
+and help in `scan-to-solid-ukrainian.json`, or the same test fails, and the same label in the
+scripts' `ui_names.UKRAINIAN`, or their answers name it in English.
 
 ## Build
 
@@ -64,6 +67,8 @@ On Windows with Rust (MSVC) and the Visual Studio C++ tools:
 cargo build --release --locked -p solidcraft -p solidcraft-cli
 cargo test -p solidcraft-engine scan_to_solid
 cargo test -p solidcraft-ui-egui scan_to_solid
+cargo test -p solidcraft-ui-egui every_complete_catalog
+cargo xtask lists
 ```
 
 The binaries are `target/release/solidcraft.exe` and `solidcraft-cli.exe`. A push of the branch

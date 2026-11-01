@@ -48,7 +48,8 @@ that looks untranslated. Two guards catch that in the build:
   every English message today but are not held to it, so a new label may follow later in them; Danish, German, Spanish, Galician, Italian, Korean, Malay, Norwegian Bokmål, Polish, Brazilian Portuguese, Russian, French, Ukrainian and
   Turkish are partial — their gaps fall back to English and are reported by `cargo xtask i18n` without
   failing the build. In the scan-to-solid fork Ukrainian is complete too, so the same test fails a
-  message without `uk`. A new label needs en, ar, he, ja, zh, de and ko; Russian, French, Ukrainian and Malay may
+  message without `uk` (the messages v0.26.1's `uk.json` lacked are in `pending/ukrainian-gaps.json`,
+  [scan-to-solid.md](scan-to-solid.md)). A new label needs en, ar, he, ja, zh, de and ko; Russian, French, Ukrainian and Malay may
   follow later.
 - `every_toolbar_tab_and_panel_is_in_the_english_catalog` — tabs and panels reach the UI as bare
   source strings, resolved only by the English-label adapter, so a heading missing from `en.json`
