@@ -58,9 +58,11 @@ cargo test -p solidcraft-ui-egui scan_to_solid
 ```
 
 The binaries are `target/release/solidcraft.exe` and `solidcraft-cli.exe`. A push of the branch
-builds the same in GitHub Actions (`scan-to-solid.yml`). On Linux the Windows exe cross-builds as
-upstream's `docs/building.md` says (`cargo xwin build --release --target x86_64-pc-windows-msvc -p solidcraft`),
-which is how this branch has been built so far, unpushed.
+builds the same in GitHub Actions (`scan-to-solid.yml`): the Build step passes, but its test step has not
+finished yet. It compiled the ui-egui tests in release for over 3 h 20 min, and GitHub stopped the job at its
+6 h limit (run 41233032674, 2026-10-31). On Linux the Windows exe cross-builds as upstream's
+`docs/building.md` says (`cargo xwin build --release --target x86_64-pc-windows-msvc -p solidcraft`), and the
+tab's tests run there as `cargo test --profile ci`. The installed exe has been built that way.
 
 ## Keeping up with upstream
 
