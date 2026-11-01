@@ -2,7 +2,7 @@
 
 This branch (`scan-to-solid`, from v0.26.1) adds one ribbon tab, **Scan To Solid**, to SolidCraft:
 a scan turned into a parametric solid by the scan-to-solid scripts (the `scan-to-solid` repository,
-ADR 0018 there). Everything else is upstream SolidCraft.
+ADR 0018 there). Everything else is SolidCraft v0.26.1 as it was forked.
 
 ## What it adds
 
@@ -14,7 +14,7 @@ ADR 0018 there). Everything else is upstream SolidCraft.
 | `crates/ui-egui/src/dialogs.rs`, `dialogs_dense.rs` | `Kind::Scan`: a tab button's command dialog, opened by `Dialog::for_command` like any other; its OK runs the script. |
 | `crates/ui-egui/src/lib.rs` | `SolveApp::scan_to_solid`; `start` waits for the actions once, `poll` each frame. |
 | `apps/solidcraft/src/main.rs` | the scripts stop when the app closes. |
-| `crates/ui-egui/src/file_load.rs`, `lib.rs` | Insert Mesh puts a PLY in as a mesh (`file.insert_mesh`), as its name says. Upstream decides by the extension and makes a PLY a point cloud, which Section cannot cut; Creality writes its scans as `Mesh.ply`. |
+| `crates/ui-egui/src/file_load.rs`, `lib.rs` | Insert Mesh puts a PLY in as a mesh (`file.insert_mesh`), as its name says. SolidCraft v0.26.1 decided by the extension and made a PLY a point cloud, which Section cannot cut; Creality writes its scans as `Mesh.ply`. |
 | `crates/ui-egui/src/command_help.rs`, `assets/locales/pending/scan-to-solid.json` | the tab's names, the button labels and their help. English only: the other complete catalogs (ar, he, ja, vi, zh) carry the English text until the app is translated as a whole. |
 | `.github/workflows/scan-to-solid.yml` | a Windows x64 build of this branch (unsigned), with the tab's tests. |
 
@@ -60,16 +60,12 @@ cargo test -p solidcraft-ui-egui scan_to_solid
 The binaries are `target/release/solidcraft.exe` and `solidcraft-cli.exe`. A push of the branch
 builds the same in GitHub Actions (`scan-to-solid.yml`): the Build step passes, but its test step has not
 finished yet. It compiled the ui-egui tests in release for over 3 h 20 min, and GitHub stopped the job at its
-6 h limit (run 41233032674, 2026-10-31). On Linux the Windows exe cross-builds as upstream's
+6 h limit (run 41233032674, 2026-10-31). On Linux the Windows exe cross-builds as
 `docs/building.md` says (`cargo xwin build --release --target x86_64-pc-windows-msvc -p solidcraft`), and the
 tab's tests run there as `cargo test --profile ci`. The installed exe has been built that way.
 
-## Keeping up with upstream
+## Upstream
 
-```
-git fetch upstream --tags
-git merge v<next>
-```
-
-The tab's code sits in its own files; the shared files (`workspace.rs`, `lib.rs`, `main.rs`,
-`cmd/mod.rs`, `engine/src/lib.rs`, `command_help.rs`) change in a few marked lines.
+This fork is the only SolidCraft we use (the owner, 2026-11-01; ADR 0029 of the scan-to-solid repository):
+releases of `tangency-labs/solidcraft` are not merged and nothing goes back to it. The clone has no `upstream`
+remote. A fix the kernel needs is made here.
